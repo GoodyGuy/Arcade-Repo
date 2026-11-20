@@ -32,6 +32,7 @@ GAMES = (
     GameEntry("storm_drop", "StormDropGame"),  # battle royale with building, against bots
     GameEntry("vanguard", "VanguardGame"),  # hero team objective shooter, against bots
     GameEntry("breach_point", "BreachPointGame"),  # round-based plant-and-defuse tactical shooter, against bots
+    GameEntry("ashworth_hall", "AshworthHallGame"),  # lawn restoration: one web page, played in Qt's own web view
 )
 
 

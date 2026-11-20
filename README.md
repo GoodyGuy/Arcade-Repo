@@ -34,6 +34,7 @@ A game that fails to import is left off the home screen; the rest still open.
 | `games/storm_drop` | Storm Drop | battle royale with building, against bots |
 | `games/vanguard` | Vanguard | hero team objective shooter, against bots |
 | `games/breach_point` | Breach Point | round-based plant-and-defuse tactical shooter, against bots |
+| `games/ashworth_hall` | Ashworth Hall | lawn restoration on a ride-on mower: one self-contained web page, played in Qt's built-in web view (or the browser where PySide6 has none) |
 
 All games are single player. Sound and music are synthesised in code; no audio files are shipped.
 
