@@ -86,11 +86,23 @@ ADVANCEMENTS = [
     ("spires", "Frozen Needles", "Find a field of ice spires", B.PACKED_ICE, ()),
     ("caver", "Colours Below", "Stand in a dripstone, moss or sulfur cave", B.STALAGMITE, ()),
     ("gloom", "Into the Gloom", "Reach a gloom cave, far below", B.WISP_BLOOM, ()),
+    ("chest", "Put Away", "Craft a chest: a ring of planks", B.CHEST, (B.CHEST,)),
+    ("loot", "Finders Keepers", "Open an old chest in a hut, a keep or a spire", B.OLD_CHEST, ()),
+    ("breed", "Little Ones", "Feed two animals of a kind and see their young", B.WHEAT_ITEM, ()),
+    ("rain", "Under the Weather", "Stand out in the rain or the snow", B.WATER_BUCKET, ()),
+    ("rider", "In the Saddle", "Saddle a horse and ride it", B.SADDLE, ()),
+    ("rune", "Rune Bearer", "Put a rune on something at a rune bench", B.RUNE_BENCH, ()),
+    ("signal", "Bright Idea", "Light a signal lamp from a lever or a button", B.LAMP, ()),
+    ("rime", "Cold Fire", "Find a rime hollow in the Deep", B.RIMESTONE, ()),
+    ("tar", "Black Flats", "Cross the tar flats of the Deep", B.AMBER, ()),
+    ("grove", "Dawn Light", "Walk a dawn grove of the Sky Isles", B.DAWN_LEAVES, ()),
+    ("barrens", "Star Walker", "Cross a star barren of the Sky Isles", B.STARDUST, ()),
 ]
 # the advancement for setting foot in a biome
 BIOME_ADV = {"sunflower_meadow": "meadow", "savanna": "savanna", "savanna_plateau": "savanna",
              "savanna_crags": "savanna", "painted_mesa": "mesa", "mesa_woodland": "mesa", "mesa_spires": "mesa",
              "marsh": "marsh", "rainforest": "rainforest", "old_growth_forest": "oldgrowth", "ice_spires": "spires"}
+REALM_ADV = {"rime_hollows": "rime", "tar_flats": "tar", "dawn_groves": "grove", "star_barrens": "barrens"}
 _ADV = {a[0]: a for a in ADVANCEMENTS}
 
 
@@ -141,6 +153,10 @@ class BookMixin:
         if "dawn" not in done and self.day_number >= 2 and not self.creative:
             self.award("dawn")
         w, p = self.world, self.player
+        if self.dim != "over" and w is not None and p is not None:
+            key = REALM_ADV.get(w.biome_name(p.x, p.z))
+            if key and key not in done:
+                self.award(key)
         if self.dim == "over" and w is not None and p is not None:
             key = BIOME_ADV.get(w.biome_name(p.x, p.z))
             if key and key not in done and p.y > w.sea - 4:

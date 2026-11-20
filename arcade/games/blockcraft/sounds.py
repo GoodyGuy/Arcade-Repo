@@ -439,6 +439,18 @@ def _ambience(sfx) -> None:  # noqa: ANN001
     wind = _soft(noise(3.0, 1.0, 0.0, seed=151), 90) * 3.0 * (0.4 + 0.6 * np.sin(np.pi * np.arange(int(3.0 * RATE)) /
                                                                                  int(3.0 * RATE)) ** 2)
     sfx.add("wind", envelope(np.clip(wind, -1, 1) * 0.5, 0.8, 1.0), 0.22)
+    n = int(3.0 * RATE)  # rain: a steady hiss with a patter of drops in it (played again and again, overlapping)
+    hiss = _band(noise(3.0, 1.0, 0.0, seed=170), 2, 12) * 0.5 + _soft(noise(3.0, 1.0, 0.0, seed=171), 5) * 0.5
+    patter = (np.random.default_rng(172).random(n) > 0.9985).astype(float)
+    patter = np.convolve(patter, np.exp(-np.arange(300) / 40.0), mode="same") * 0.5
+    sfx.add("rain", envelope(np.clip(hiss * (0.8 + patter), -1, 1) * 0.5, 0.6, 0.8), 0.3)
+    n = int(3.6 * RATE)  # thunder: a crack, then a long roll dying away
+    roll = _soft(_soft(noise(3.6, 1.0, 0.0, seed=173), 60), 30) * 14.0 * np.exp(-np.arange(n) / (RATE * 1.1))
+    roll *= 0.6 + 0.4 * np.sin(2 * np.pi * 2.3 * np.arange(n) / RATE + 1.0)
+    crack = np.zeros(n)
+    crack[:int(0.25 * RATE)] = _band(noise(0.25, 1.0, 0.0, seed=174), 1, 8) * np.exp(-np.arange(int(0.25 * RATE)) / (RATE * 0.06))
+    sfx.add("thunder", envelope(np.clip(roll + crack * 0.8 + np.sin(2 * np.pi * 46 * np.arange(n) / RATE) *
+                                        np.exp(-np.arange(n) / (RATE * 0.8)) * 0.3, -1, 1) * 0.8, 0.005, 1.2), 0.7)
     n = int(4.0 * RATE)  # the hollow air of a cave: slow, dark noise with a low hum under it
     drone = _soft(_soft(noise(4.0, 1.0, 0.0, seed=152), 160), 160) * 9.0 * (0.5 + 0.5 * np.sin(np.pi * np.arange(n) / n))
     hum = np.sin(2 * np.pi * 58 * np.arange(n) / RATE) * 0.12

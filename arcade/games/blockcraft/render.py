@@ -20,6 +20,7 @@ from PySide6.QtOpenGL import (QOpenGLBuffer, QOpenGLFramebufferObject, QOpenGLFr
                               QOpenGLShader, QOpenGLShaderProgram, QOpenGLTexture, QOpenGLVertexArrayObject)
 
 from app.arcade.games.blockcraft import blocks as B
+from app.arcade.games.blockcraft.entities import BABY_SCALE
 from app.arcade.games.blockcraft.mesher import FACE_BYTES, SHAPES
 from app.arcade.games.blockcraft.worldgen import HEIGHT
 
@@ -70,6 +71,8 @@ class Env:
     def __init__(self, time_of_day: float = 0.25, t: float = 0.0, realm: str = "over") -> None:
         self.time = t  # seconds (water animation, clouds)
         self.realm = realm  # "over", "deep" (no sky: a red murk) or "isles" (a starlit dusk that never ends)
+        self.rain = 0.0  # 0 a clear sky .. 1 a storm overhead (the game sets it; the overworld only)
+        self.flash = 0.0  # lightning: 1 at the stroke, fading
         self.set_time(time_of_day)
         self.underwater = False
         self.in_lava = False
@@ -100,6 +103,18 @@ class Env:
             self.day, self.daylight, self.sunset, self.stars = 0.7, F32(0.82), 0.0, 0.9
             self.sky_top, self.fog = np.array([14, 18, 54], F32), np.array([70, 112, 152], F32)
             self.ambient, self.clouds = 0.13, False
+        elif self.rain > 0.0 or self.flash > 0.0:  # under rain clouds: a grey, darker sky, no sunset, no stars
+            r, k = min(float(self.rain), 1.0), 0.26 + 0.74 * day
+            self.sky_top = self.sky_top + (np.array([70, 78, 92], F32) * k - self.sky_top) * (0.92 * r)
+            self.fog = self.fog + (np.array([126, 134, 146], F32) * k - self.fog) * (0.92 * r)
+            self.daylight = F32(float(self.daylight) * (1.0 - 0.36 * r))
+            self.sunset *= 1.0 - r
+            self.stars *= 1.0 - r
+            if self.flash > 0.0:
+                fl = min(float(self.flash), 1.0)
+                self.sky_top = self.sky_top + (np.array([236, 240, 255], F32) - self.sky_top) * (0.75 * fl)
+                self.fog = self.fog + (np.array([236, 240, 255], F32) - self.fog) * (0.75 * fl)
+                self.daylight = F32(min(1.0, float(self.daylight) + 0.7 * fl))
 
 
 # --- the texture layers ----------------------------------------------------------------------------------------------
@@ -221,12 +236,24 @@ def mob_boxes(m, a: float, light: np.ndarray, origin: tuple) -> np.ndarray:  # n
     inst[:, 7] = np.array([0.0, sw, -sw, m.head_pitch, arm], F32)[L.part_kinds[m.kind]]
     if m.death > 0:
         inst[:, 11] = min(m.death, 1.0) * math.pi / 2
+    if m.baby > 0:  # the young: the same animal, smaller
+        inst[:, 4:7] *= BABY_SCALE
+        inst[:, 8:11] *= BABY_SCALE
+        inst[:, 12:15] *= BABY_SCALE
     tint = light
     if m.hurt > 0 or m.death > 0:
         tint = tint * np.array([1.0, 0.45, 0.45])
     if m.burning > 0:
         tint = np.maximum(tint, np.array([1.0, 0.7, 0.3]))
     inst[:, 16:19] = tint
+    if m.saddled:  # a saddle on its back: one more box, dark leather
+        seat = inst[:1].copy()
+        k = BABY_SCALE if m.baby > 0 else 1.0
+        seat[0, 7] = 0.0
+        seat[0, 8:11] = (0.0, 10.6 / 16 * k, -0.5 / 16 * k)
+        seat[0, 12:15] = (5.4 / 16 * k, 0.9 / 16 * k, 4.2 / 16 * k)
+        seat[0, 16:19] = np.asarray(tint) * np.array([0.42, 0.26, 0.2])
+        inst = np.concatenate([inst, seat])
     return inst
 
 
@@ -501,7 +528,8 @@ uniform mat4 u_vp; uniform vec3 u_cam; uniform vec3 u_right; uniform vec3 u_up;
 out vec3 v_col; out vec3 v_rel;
 void main() {
     float u = float(gl_VertexID & 1) - 0.5, v = float(gl_VertexID >> 1) - 0.5;
-    vec3 p = a_pos.xyz + (u_right * u + u_up * v) * a_pos.w;
+    vec3 tall = a_col.a > 1.5 ? vec3(0.0, a_col.a, 0.0) : u_up;  // (rain: a streak, upright, a_col.a times as long)
+    vec3 p = a_pos.xyz + (u_right * u + tall * v) * a_pos.w;
     gl_Position = u_vp * vec4(p, 1.0);
     v_rel = p - u_cam; v_col = a_col.rgb;
 }
@@ -523,7 +551,7 @@ void main() {
 _SKY_FS = "#version 330 core\n" + _SKY_GLSL + f"const float CLOUD_Y = {CLOUD_Y};\n" + """
 in vec2 v_ndc; out vec4 o;
 uniform vec3 u_r; uniform vec3 u_u; uniform vec3 u_f; uniform vec3 u_eye;
-uniform float u_time; uniform float u_stars; uniform float u_dayf; uniform float u_clouds;
+uniform float u_time; uniform float u_stars; uniform float u_dayf; uniform float u_clouds; uniform float u_rain;
 float hash(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
 float vnoise(vec2 p) {
     vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
@@ -544,11 +572,12 @@ void main() {
         float sd = dot(d, u_sun);
         vec2 q = floor(vec2(d.z, dot(d, tng)) / max(abs(sd), 1e-4) * 64.0 + 0.5);
         float r = length(q);
+        float open = 1.0 - u_rain;  // (rain clouds hide the sun and the moon)
         if (sd > 0.0) {
-            if (r < 5.6) c = mix(vec3(1.0, 0.86, 0.5), vec3(1.0, 0.98, 0.86), clamp(1.4 - r * 0.2, 0.0, 1.0));
-            else c += vec3(1.0, 0.78, 0.45) * exp(-r * 0.16) * 0.45;
+            if (r < 5.6) c = mix(c, mix(vec3(1.0, 0.86, 0.5), vec3(1.0, 0.98, 0.86), clamp(1.4 - r * 0.2, 0.0, 1.0)), open);
+            else c += vec3(1.0, 0.78, 0.45) * exp(-r * 0.16) * 0.45 * open;
         } else if (r < 4.6 && length(q - vec2(2.0, 1.0)) > 3.7) {
-            c = mix(c, vec3(0.86, 0.9, 1.0), 0.95);
+            c = mix(c, vec3(0.86, 0.9, 1.0), 0.95 * open);
         } else if (r < 4.6) {
             c = mix(c, vec3(0.2, 0.22, 0.3), 0.5 * u_stars);
         }
@@ -556,10 +585,11 @@ void main() {
             float t = (CLOUD_Y - u_eye.y) / d.y;
             vec2 cell = floor((u_eye.xz + d.xz * t + vec2(u_time * 1.1, 0.0)) / 12.0);
             float n = vnoise(cell / 5.5) * 0.7 + vnoise(cell / 2.1 + 40.0) * 0.3;
-            if (n > 0.56) {
+            if (n > 0.56 - 0.52 * u_rain) {  // more of them under rain, and grey
                 vec3 cc = mix(vec3(0.1, 0.11, 0.17), vec3(1.0), u_dayf);
                 cc = mix(cc, vec3(1.0, 0.62, 0.42), u_sunset * 0.5);
-                c = mix(c, cc, 0.84 * clamp(1.0 - t / 1100.0, 0.0, 1.0));
+                cc = mix(cc, u_horizon * (0.62 + 0.3 * n), u_rain * 0.9);
+                c = mix(c, cc, min(0.84 + 0.14 * u_rain, 1.0) * clamp(1.0 - t / 1100.0, 0.0, 1.0));
             }
         }
     }
@@ -878,6 +908,7 @@ class Renderer:
         vp = self._view_projection(M, cam, fov, w / max(h, 1), max_dist)
         # the sky and fog of this moment
         day = float(env.day)
+        rain = min(max(float(env.rain), 0.0), 1.0) if env.realm == "over" else 0.0
         if env.in_lava:
             flat, fog = (0.9, 0.32, 0.05, 1.0), (0.0, 2.5)
         elif env.underwater:
@@ -888,7 +919,7 @@ class Renderer:
             flat = (float(c[0]), float(c[1]), float(c[2]), 1.0)
             fog = (env.fog_range[0], min(env.fog_range[1], max_dist - 6.0))
         else:
-            flat, fog = (0.0, 0.0, 0.0, 0.0), (max_dist * 0.62, max_dist - 6.0)
+            flat, fog = (0.0, 0.0, 0.0, 0.0), (max_dist * (0.62 - 0.4 * rain), max_dist - 6.0)  # rain: hazier
         zen, hor = env.sky_top / 255.0, env.fog / 255.0
         tint = (0.55 + 0.45 * day, 0.62 + 0.38 * day, 1.0)
 
@@ -930,6 +961,7 @@ class Renderer:
         f.glUniform1f(self._u(prog, "u_stars"), float(env.stars))
         f.glUniform1f(self._u(prog, "u_dayf"), day)
         f.glUniform1f(self._u(prog, "u_clouds"), 1.0 if fancy and env.clouds else 0.0)
+        f.glUniform1f(self._u(prog, "u_rain"), rain)
         self.sky_vao.bind()
         f.glDrawArrays(GL_TRIANGLES, 0, 3)
         self.sky_vao.release()
@@ -947,7 +979,8 @@ class Renderer:
         f.glUniform1f(self._u(prog, "u_gamma"), _GAMMA[0])
         f.glUniform3f(self._u(prog, "u_skytint"), *tint)
         f.glUniform1f(self._u(prog, "u_alpha"), 1.0)
-        power = (min(1.0, float(env.sun[1]) * 3.0 + 0.25) if sun_up else 0.25)
+        power = (min(1.0, float(env.sun[1]) * 3.0 + 0.25) if sun_up else 0.25) * (1.0 - 0.85 * rain)  # (no hard
+        # sunlight and no hard shadows under rain clouds)
         f.glUniform1f(self._u(prog, "u_shon"), 1.0 if shvp is not None else 0.0)
         f.glUniform1f(self._u(prog, "u_shpx"), 1.0 / SHADOW_SIZE)
         prog.setUniformValue1i(self._u(prog, "u_shadow"), 1)
@@ -1100,6 +1133,8 @@ class Renderer:
         sy = (1 - float(q[1]) / float(q[2]) / tan) / 2 if seen else 0.5
         f.glUniform3f(self._u(prog, "u_sunpos"), sx, sy, 1.0 if seen else 0.0)
         rays = 0.0 if (env.underwater or env.in_lava) else float(env.day) * (0.55 + 0.45 * float(env.sunset))
+        if env.realm == "over":
+            rays *= 1.0 - min(max(float(env.rain), 0.0), 1.0)
         f.glUniform1f(self._u(prog, "u_rays"), rays)
         self.sky_vao.bind()
         f.glDrawArrays(GL_TRIANGLES, 0, 3)

@@ -110,6 +110,7 @@ class PlayMixin:
         self.dim = "over"  # the realm being played
         self.travelling = False
         self._reset_life()
+        self._reset_extras()
 
     def start_world(self, record: dict) -> None:
         """Begin loading a saved (or new) world record; the game starts when the land around the player stands."""
@@ -191,6 +192,7 @@ class PlayMixin:
         self.tod = float(r.get("tod", 0.02)) % 1.0
         self.world_time = float(r.get("time", 0.0))
         self._load_furnaces(r)
+        self._load_extras(r)
         mobs = r.get("mobs")
         if isinstance(mobs, list) and r.get("visited"):
             for m in mobs:
@@ -201,10 +203,12 @@ class PlayMixin:
                 if kind in ANIMALS and hp > 0:
                     mob = Mob(kind, x, y, z, self.rng)
                     mob.yaw, mob.health = yaw, hp
+                    mob.load_more(m[6:])
                     self.mobs.append(mob)
         else:
             for _ in range(8):
                 self._spawn_animals(8.0, 44.0)
+        self._load_riders(r)
         self.record["visited"] = True
         self.screen = "game"
         self.overlay = None
@@ -269,8 +273,10 @@ class PlayMixin:
         r["time"] = round(self.world_time, 1)
         r[realm_key("furn", self.dim)] = [[*pos, *f.to_json()] for pos, f in self.furnaces.items()]
         if self.dim == "over":
-            r["mobs"] = [m.to_json() for m in self.mobs if m.kind in ANIMALS and not m.dead][:MAX_MOBS]
+            r["mobs"] = [m.to_json() for m in sorted(self.mobs, key=lambda m: not m.saddled)  # (saddled ones first)
+                         if m.kind in ANIMALS and not m.dead][:MAX_MOBS]
         r["armor"] = self.inv.armor_json()
+        self._store_extras(r)
         r["last"] = int(time.time())
         r["visited"] = True
         r["fmt"] = 2
@@ -313,6 +319,7 @@ class PlayMixin:
         self.equip = min(1.0, self.equip + dt * 5)
         self.held_name_time = max(0.0, self.held_name_time - dt)
         self.life_frame(dt)
+        self.extras_frame(dt)
         self.hurt_anim = max(0.0, self.hurt_anim - dt * 2.5)
         if self.overlay is None and self.health > 0 and self.sleep is None:
             self._update_target()
@@ -327,12 +334,13 @@ class PlayMixin:
             self.acc = 0.0
         self.particles.tick(self.world, dt)
         self.env.time = self.time
+        self.env.rain, self.env.flash = self.rain, self.flash  # the weather over the player (extras.py)
         self.env.set_time(self.tod)
 
     def game_tick(self) -> None:
         p, w = self.player, self.world
         self.tick_count += 1
-        playing = self.overlay is None or self.overlay in ("inventory", "crafting", "furnace", "dead")
+        playing = self.overlay is None or self.overlay in ("inventory", "crafting", "furnace", "chest", "runes", "dead")
         keys = self.keys if self.overlay is None and self.health > 0 and self.sleep is None else set()
         forward = (Qt.Key.Key_W in keys) - (Qt.Key.Key_S in keys)
         strafe = (Qt.Key.Key_A in keys) - (Qt.Key.Key_D in keys)
@@ -342,7 +350,10 @@ class PlayMixin:
         if forward <= 0:
             self.sprint_key = False
         was_ground = p.on_ground
-        p.tick(w, forward, strafe, jump, sneak, sprint, self.creative)
+        if self.riding is not None:
+            self.ride_tick(forward, strafe, jump, sneak)  # in the saddle: the horse does the walking
+        else:
+            p.tick(w, forward, strafe, jump, sneak, sprint, self.creative)
         if p.y > SKY_LIMIT:  # no flying to the clouds
             p.y = SKY_LIMIT
             p.vy = min(p.vy, 0.0)
@@ -373,6 +384,9 @@ class PlayMixin:
         if p.on_ground and not was_ground and p.landed_fall > 0:
             under = w.get(math.floor(p.x), math.floor(p.y - 0.2), math.floor(p.z))
             fall = p.landed_fall * (0.0 if under == B.CLOUD else (0.2 if under == B.HAY else 1.0))  # soft landings
+            boots = self.inv.armor[3]
+            if boots is not None and B.rune_of(boots[2]) == B.R_LIGHTFOOT:
+                fall = 3 + (fall - 6) * 0.5 if fall > 6 else 0.0  # the Lightfoot rune: three blocks more, then half
             if fall > 3 and not self.creative:
                 self.damage(math.ceil(fall - 3), "fall")
             elif p.landed_fall > 1.2:
@@ -388,6 +402,7 @@ class PlayMixin:
         if self.tick_count % WATER_STEP == 0:
             self._water_tick()
         self.life_tick()
+        self.extras_tick()
         self._music_tick()
         self.tod = (self.tod + TICK / DAY_SECONDS) % 1.0
         self.world_time += TICK
@@ -457,7 +472,7 @@ class PlayMixin:
         if cause in ("mob", "explosion"):  # armour takes 4 % off a blow for each of its points, and wears
             points = self.inv.armor_points()
             if points:
-                amount *= 1 - 0.04 * points
+                amount *= max(0.15, 1 - 0.04 * points - 0.07 * self.worn_runes(B.R_WARD))  # (each Ward rune: 7 % more)
                 self.inv.wear_armor()
         if self.sleep is not None:
             self.sleep = None
@@ -483,6 +498,7 @@ class PlayMixin:
                 self.inv.armor[i] = None
         self.xp_total = 0
         self.mining = None
+        self.dismount()
         self.overlay = "dead"
         self.set_mouse_captured(False)
 
@@ -507,17 +523,23 @@ class PlayMixin:
     def _mob_tick(self) -> None:
         p, w = self.player, self.world
         day = self.env.day if hasattr(self, "env") else 1.0
+        p.held = self.inv.held[0] if self.inv.held and self.health > 0 else 0  # (animals follow their food)
         keep = []
         chunks = w.chunks
         for m in self.mobs:
+            if m.ridden:  # the horse under the player (ride_tick moves it)
+                keep.append(m)
+                continue
             d = math.hypot(m.x - p.x, m.z - p.z)
             if m.hostile and (d > 72 or m.age > 600):
                 continue
             if (math.floor(m.x) >> 4, math.floor(m.z) >> 4) not in chunks or (d > 96 and not m.hostile) or \
                     (d > 48 and m.kind == "fish"):
+                if m.saddled and not m.dead:
+                    keep.append(m)  # a saddled horse waits, however far its rider goes
                 continue  # walked (or was left) out of the loaded land
             if d < 56 or m.dead:
-                for ev in m.tick(w, p, day):
+                for ev in m.tick(w, p, day * (1.0 - self.rain)):
                     if ev == "smash" and m.foe is not None:  # a guardian's blow
                         m.foe.damage(14, m.x, m.z)
                         if d < 24:
@@ -580,8 +602,10 @@ class PlayMixin:
 
         for item, lo, hi in MOB_DROPS.get(m.kind, []):
             n = int(self.rng.integers(lo, hi + 1))
-            if n > 0:
+            if n > 0 and m.baby <= 0:
                 self._spawn_drop(m.x, m.y + 0.5, m.z, I.stack(item, n))
+        if m.saddled:
+            self._spawn_drop(m.x, m.y + 0.5, m.z, I.stack(B.SADDLE, 1))
         self.gain_xp(5 if m.hostile else int(self.rng.integers(1, 4)))
         if m.hostile:
             self.award("hunter")
@@ -726,7 +750,7 @@ class PlayMixin:
         best = self.target[2] if self.target else reach
         self.target_mob = None
         for m in self.mobs:
-            if m.dead:
+            if m.dead or m.ridden:
                 continue
             t = _ray_box(eye, d, m.box())
             if t is not None and t < min(best, 3.0 if not self.creative else 5.0):
@@ -754,6 +778,8 @@ class PlayMixin:
                 held = self.inv.held[0] if self.inv.held else 0
                 p = self.player
                 t = B.dig_time(b, held, p.on_ground or p.flying, self._eye_in_water())
+                if t > 0 and math.isfinite(t) and self.held_rune() == B.R_SWIFT:
+                    t = max(0.05, math.ceil(t * 0.6 * 20 - 1e-6) / 20)  # the Swift rune: much faster
                 if self.mine_cool <= 0:
                     self.mine_progress += dt / t if t > 0 else 1.0
                     if self.swing < 0.2:
@@ -770,7 +796,7 @@ class PlayMixin:
             self.mine_progress = 0.0
         # using / placing / eating
         held = self.inv.held
-        food = held is not None and held[0] in B.FOOD
+        food = held is not None and held[0] in B.FOOD and not self.feeds_mob(held[0])
         if rmb and food and (self.food < 20) and not self.creative:
             self.eat_time += dt
             if int((self.eat_time - dt) * 4) != int(self.eat_time * 4):
@@ -810,6 +836,8 @@ class PlayMixin:
         if info is not None:
             mat, kind = info
             dmg = {3: B.SWORD_DAMAGE[mat], 1: B.SWORD_DAMAGE[mat] - 1, 0: 2 + mat * 0.5, 2: 1.5 + mat * 0.5}[kind]
+            if self.held_rune() == B.R_KEEN:
+                dmg += 3.0  # the Keen rune
             if not self.creative:
                 self.inv.damage_held(1 if kind == 3 else 2)
         if self.player.vy < -0.1 and not self.player.on_ground:
@@ -824,8 +852,10 @@ class PlayMixin:
     def _set_blocks(self, changes: list) -> None:
         if self.world.set_many(changes):
             self.edit_time = self.world_time
+            get, signals = self.world.get, self.signals
             for c in changes:
                 self.water.poke(c[0], c[1], c[2])
+                signals.poke(get, c[0], c[1], c[2])
 
     def _water_tick(self) -> None:
         """Water runs on a step (see fluids.py); the plants it reaches are washed out as items."""
@@ -833,6 +863,8 @@ class PlayMixin:
         if not changes:
             return
         self.world.set_many(changes)
+        for x, y, z, _b in washed:  # (a lever or dust washed away: what it fed has to look again)
+            self.signals.poke(self.world.get, x, y, z)
         if not self.creative:
             for x, y, z, b in washed[:24]:
                 for item, n in B.drops(b, 0, self.rng):
@@ -848,6 +880,11 @@ class PlayMixin:
         held = self.inv.held[0] if self.inv.held else 0
         new = B.WATER if b in (B.SEAGRASS, B.KELP) else B.AIR  # (water runs into the gap by itself: fluids.py)
         changes = [(x, y, z, new)]
+        if b in B.DOORS:  # a door goes as one: the other half too, and one door drops whichever half was struck
+            oy = y - 1 if (b - B.DOOR) & 1 else y + 1
+            if w.get(x, oy, z) in B.DOORS:
+                changes.append((x, oy, z, B.AIR))
+            b -= (b - B.DOOR) & 1
         above = w.get(x, y + 1, z)
         top, yy = above, y + 1
         while top in PLANTS:  # what stood on it goes too (a whole stalk of cane or kelp)
@@ -879,9 +916,14 @@ class PlayMixin:
                 for s in f.slots:
                     if s is not None:
                         self._spawn_drop(x + 0.5, y + 0.5, z + 0.5, s, 0.15)
+        elif B.CHEST <= b <= B.OLD_CHEST:
+            self.spill_chest((x, y, z), b)
         if self.creative:
             return
+        bounty = self.held_rune() == B.R_BOUNTY
         for item, n in B.drops(b, held, self.rng):
+            if bounty and item >= 256 and self.rng.random() < 0.4:
+                n *= 2  # the Bounty rune: now and then twice the coal, the gems, the seeds... (never blocks)
             self._spawn_drop(x + 0.5, y + 0.3, z + 0.5, I.stack(item, n), 0.1)
         if b in ORE_XP and B.drops(b, held, np.random.default_rng(0)):
             lo, hi = ORE_XP[b]
@@ -925,6 +967,17 @@ class PlayMixin:
                 self.furnaces.setdefault(pos, I.Furnace())
                 self.open_overlay("furnace")
                 return
+            if b in B.SIGNAL_BLOCKS and not (Qt.Key.Key_Shift in self.keys and held) and \
+                    self.use_signal(pos, b, fresh):
+                return
+            if b == B.RUNE_BENCH and not (Qt.Key.Key_Shift in self.keys and held):
+                if fresh:
+                    self.open_overlay("runes")
+                return
+            if B.CHEST <= b <= B.OLD_CHEST and not (Qt.Key.Key_Shift in self.keys and held):
+                if fresh:
+                    self.open_chest(pos)
+                return
             if b == B.TNT and held is not None and held[0] == B.FLINT_STEEL:
                 self._set_blocks([(*pos, B.AIR)])
                 self.falling.append(BlockEntity(pos[0] + 0.5, float(pos[1]), pos[2] + 0.5, B.TNT, fuse=4.0))
@@ -933,7 +986,10 @@ class PlayMixin:
                     self.inv.damage_held(1)
                 self.swing = 1.0
                 return
-            if held is not None and B.is_block(held[0]) and held[0] in B.PLACEABLE:
+            if held is not None and held[0] in (B.REDSTONE, B.DOOR):
+                if fresh or held[0] == B.REDSTONE:
+                    self.place_signal(pos, normal, held[0])  # dust is laid, a door stood up (extras.py)
+            elif held is not None and B.is_block(held[0]) and held[0] in B.PLACEABLE:
                 self.place_block(pos, normal, held[0])
 
     def _use_bucket(self, item: int) -> None:
@@ -973,8 +1029,8 @@ class PlayMixin:
         if not w.inside(x, y, z) or w.get(x, y, z) not in REPLACEABLE:
             return False
         block = item
-        if item == B.FURNACE:
-            block = B.FURNACE + int(round(self.player.yaw / 90)) % 4
+        if item in (B.FURNACE, B.CHEST):
+            block = item + int(round(self.player.yaw / 90)) % 4
         if B.KIND[block] == B.K_CROSS and not self.plant_ok(block, x, y, z, pos):
             return False
         if B.SOLID[block]:
@@ -1031,6 +1087,8 @@ class PlayMixin:
                     b = w.get(bx, by, bz)
                     if b in (B.AIR, B.BORDER, B.BEDROCK, B.OBSIDIAN, B.WATER, B.LAVA) or not w.inside(bx, by, bz):
                         continue
+                    if B.CHEST <= b <= B.OLD_CHEST:
+                        self.spill_chest((bx, by, bz), b)
                     if b == B.TNT:
                         self.falling.append(BlockEntity(bx + 0.5, float(by), bz + 0.5, B.TNT,
                                                         fuse=float(self.rng.uniform(0.5, 1.5))))

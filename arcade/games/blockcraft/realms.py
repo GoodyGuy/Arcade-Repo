@@ -2,10 +2,12 @@
 pure function of the seed):
 
 * **the Deep**: a world of fire under the world. A sea of lava between a floor and a roof of deepstone held apart by
-  great pillars; ash wastes with charred trunks, ember forests of glowing caps, crystal hollows, basalt spires; and
-  here and there a ruined forge keep that guards starstone.
+  great pillars; ash wastes with charred trunks, ember forests of glowing caps, crystal hollows, basalt spires,
+  rime hollows (a pocket of cold: pale rimestone, spikes of ice with a frostlight on top) and tar flats (black
+  tarstone with amber in it); and here and there a ruined forge keep that guards starstone.
 * **the Sky Isles**: islands of pale stone over nothing, moonmoss and pale trees, clouds to walk on, a storm altar on
-  the middle isle, and lone spires with treasure at the top.
+  the middle isle, and lone spires with treasure at the top; further out, dawn groves (rosemoss under trees the
+  colour of sunrise) and star barrens (bare stardust, pillars of windstone).
 
 Both are reached through gates the player crafts (see life.py)."""
 
@@ -18,7 +20,11 @@ from app.arcade.games.blockcraft.worldgen import (HEIGHT, MARGIN, RSIZE, Noise, 
                                                   hash01)
 
 DEEP_SEA = 30  # the lava level
-ASH_WASTES, EMBER_FOREST, CRYSTAL_HOLLOWS, BASALT_SPIRES = range(4)
+ASH_WASTES, EMBER_FOREST, CRYSTAL_HOLLOWS, BASALT_SPIRES, RIME_HOLLOWS, TAR_FLATS = range(6)
+SKY_ISLES, DAWN_GROVES, STAR_BARRENS = range(3)
+_DEEP_TOP = np.array([B.ASH, B.EMBER_MOSS, B.DEEPSTONE, B.BASALT, B.RIMESTONE, B.TARSTONE], np.uint8)
+_DEEP_UNDER = np.array([B.ASH, 0, 0, B.BASALT, B.RIMESTONE, B.TARSTONE], np.uint8)  # under the top block (0: rock)
+_ISLE_TOP = np.array([B.MOONMOSS, B.ROSEMOSS, B.STARDUST], np.uint8)
 KEEP_CELL = 176  # one place a forge keep may stand in every square of this many blocks
 SPIRE_CELL = 144
 ISLE_TOP = 70  # the height of the middle isle
@@ -87,8 +93,34 @@ _FEATURES = {
                                                              (10, ((1, 0, 0), (0, 0, 1), (1, 1, 0), (0, 1, 1))),
                                                              (13, ((-1, 0, 0), (-1, 1, 0), (-1, 2, 0))), (16, ((0, 0, -1),)))],
 }
-_DENSITY = {EMBER_FOREST: 0.2, ASH_WASTES: 0.05, CRYSTAL_HOLLOWS: 0.32, BASALT_SPIRES: 0.14}
+def _spike(h: int, lit: bool, arms: tuple = ()) -> tuple:
+    """A spike of ice (a frostlight on its tip)."""
+    cells = {(0, y, 0): B.PACKED_ICE for y in range(h)}
+    for dx, dy, dz in arms:
+        cells[dx, dy, dz] = B.PACKED_ICE
+    if lit:
+        cells[0, h, 0] = B.FROSTLIGHT
+    return _template(cells, B.PACKED_ICE)
+
+
+def _lump(cells: dict) -> tuple:
+    return _template(cells, B.TARSTONE)
+
+
+_FEATURES[RIME_HOLLOWS] = [_spike(2, False), _spike(3, True), _spike(4, False, ((1, 0, 0),)), _spike(5, True, ((0, 0, 1),)),
+                           _spike(7, True, ((1, 0, 0), (0, 0, -1), (1, 1, 0))), _spike(1, True)]
+_FEATURES[TAR_FLATS] = [_lump({(0, 0, 0): B.AMBER}), _lump({(0, 0, 0): B.TARSTONE, (0, 1, 0): B.AMBER, (1, 0, 0): B.TARSTONE}),
+                        _trunk(3, B.CHARRED_LOG), _lump({(0, 0, 0): B.AMBER, (1, 0, 0): B.AMBER, (0, 0, 1): B.TARSTONE}),
+                        _lump({(dx, 0, dz): B.TARSTONE for dx in (0, 1) for dz in (0, 1)} | {(0, 1, 0): B.TARSTONE,
+                                                                                            (0, 2, 0): B.AMBER}),
+                        _trunk(2, B.CHARRED_LOG, ((1, 1, 0),))]
+_PILLARS = [_trunk(h, B.WINDSTONE, arms) for h, arms in ((3, ()), (5, ((1, 0, 0),)), (7, ((0, 0, 1), (0, 1, 1))),
+                                                         (9, ((1, 0, 0), (-1, 0, 0))), (4, ((0, 0, -1),)),
+                                                         (12, ((1, 0, 0), (0, 0, 1), (1, 1, 0))))]
+_DENSITY = {EMBER_FOREST: 0.2, ASH_WASTES: 0.05, CRYSTAL_HOLLOWS: 0.32, BASALT_SPIRES: 0.14, RIME_HOLLOWS: 0.17,
+            TAR_FLATS: 0.18}
 _PALE_TREES = None
+_DAWN_TREES = None
 
 
 def _pale_trees() -> list:
@@ -97,6 +129,14 @@ def _pale_trees() -> list:
         rng = np.random.default_rng(909)
         _PALE_TREES = [_round_tree(h, B.PALE_LOG, B.PALE_LEAVES, rng) for h in (4, 5, 5, 6, 7, 8)]
     return _PALE_TREES
+
+
+def _dawn_trees() -> list:
+    global _DAWN_TREES  # noqa: PLW0603 - made once
+    if _DAWN_TREES is None:
+        rng = np.random.default_rng(910)
+        _DAWN_TREES = [_round_tree(h, B.PALE_LOG, B.DAWN_LEAVES, rng) for h in (4, 5, 6, 6, 7, 9)]
+    return _DAWN_TREES
 
 
 class _Realm:
@@ -110,6 +150,7 @@ class _Realm:
         self.seed = int(seed)
         self.noise = Noise((self.seed ^ mix) & 0xFFFFFFFF)
         self.salt = (self.seed * 0x9E3779B1 + mix) & 0xFFFFFFFFFFFF
+        self.phase = ((self.salt % 6283) / 1000.0, ((self.salt >> 13) % 6283) / 1000.0)  # where the newer lands lie
         self._sites: dict = {}
 
     def hamlets(self, *_args) -> list:  # noqa: ANN002 - only the overworld has them
@@ -160,7 +201,7 @@ class _Realm:
 class DeepGenerator(_Realm):
     dim = "deep"
     sea = DEEP_SEA
-    names = ("ash_wastes", "ember_forest", "crystal_hollows", "basalt_spires")
+    names = ("ash_wastes", "ember_forest", "crystal_hollows", "basalt_spires", "rime_hollows", "tar_flats")
 
     def __init__(self, seed: int) -> None:
         super().__init__(seed, 0x5F3759DF)
@@ -175,6 +216,10 @@ class DeepGenerator(_Realm):
         biome[b2 > 0.13] = BASALT_SPIRES
         biome[b1 > 0.1] = EMBER_FOREST
         biome[b1 < -0.12] = CRYSTAL_HOLLOWS
+        # the two newer lands: where a slow wave (bent by the noise there already is) runs high or low
+        b3 = np.sin(X / 83 + self.phase[0] + b2 * 5.0) * np.cos(Z / 97 + self.phase[1] + b1 * 5.0)
+        biome[b3 > 0.62] = RIME_HOLLOWS
+        biome[b3 < -0.64] = TAR_FLATS
         return {"floor": np.clip(np.round(floor), 8, 62).astype(np.int32),
                 "roof": np.clip(np.round(roof), 78, 122).astype(np.int32), "biome": biome}
 
@@ -196,12 +241,11 @@ class DeepGenerator(_Realm):
         f3, r3 = floor[:, :, None], roof[:, :, None]
         solid = (Y <= f3) | (Y >= r3) | (dens > 0.37)
         blk = np.where(solid, B.DEEPSTONE, np.where(Y <= DEEP_SEA, B.LAVA, B.AIR)).astype(np.uint8)
-        top = np.array([B.ASH, B.EMBER_MOSS, B.DEEPSTONE, B.BASALT], np.uint8)[biome]
+        top = _DEEP_TOP[biome]
         dry = f3 > DEEP_SEA
         blk = np.where((Y == f3) & dry, top[:, :, None], blk)
-        under = (Y < f3) & (Y >= f3 - 2) & dry
-        blk = np.where(under & (biome == ASH_WASTES)[:, :, None], B.ASH, blk)
-        blk = np.where(under & (biome == BASALT_SPIRES)[:, :, None], B.BASALT, blk).astype(np.uint8)
+        below = _DEEP_UNDER[biome][:, :, None]
+        blk = np.where((Y < f3) & (Y >= f3 - 2) & dry & (below != 0), below, blk).astype(np.uint8)
         self._bedrock(blk, x0, z0)
         rng = np.random.default_rng([self.seed & 0xFFFFFFFF, rx & 0xFFFFFFFF, rz & 0xFFFFFFFF, 11])
         for ore, per_chunk, size, lo, hi in ((B.GOLD_ORE, 7, 8, 4, 122), (B.DIAMOND_ORE, 2.5, 6, 4, 60),
@@ -262,12 +306,13 @@ class DeepGenerator(_Realm):
             cells[x + dx, y + 2, z + dz] = B.STARSTONE
         cells[x, y + 2, z] = B.GOLD_BLOCK
         cells[x, y + 1, z] = B.DIAMOND_BLOCK
+        cells[x + 3, y + 1, z + 3] = B.OLD_CHEST  # what the smiths left
         _cells(blk, x0, z0, cells)
 
 
 class IslesGenerator(_Realm):
     dim = "isles"
-    names = ("sky_isles",)
+    names = ("sky_isles", "dawn_groves", "star_barrens")
 
     def __init__(self, seed: int) -> None:
         super().__init__(seed, 0x1B873593)
@@ -277,12 +322,18 @@ class IslesGenerator(_Realm):
         r = np.sqrt(X * X + Z * Z)
         m = n.fbm2(X / 120 + 7, Z / 120 + 7, 4) * 1.1 + n.fbm2(X / 34 + 90, Z / 34 + 90, 2) * 0.22 - 0.2 + \
             np.clip(1 - r / 90, 0, 1) * 1.2
-        top = ISLE_TOP + n.fbm2(X / 55 + 300, Z / 55 + 300, 3) * 8 + np.clip(m, 0, 1) * 3
+        hills = n.fbm2(X / 55 + 300, Z / 55 + 300, 3)
+        top = ISLE_TOP + hills * 8 + np.clip(m, 0, 1) * 3
         flat = np.clip((r - 26) / 14, 0, 1)  # the middle of the middle isle is level
         top = ISLE_TOP + (top - ISLE_TOP) * flat
         thick = 2 + np.sqrt(np.clip(m, 0, 1.3)) * 24 + n.fbm2(X / 12 + 400, Z / 12 + 400, 2) * 3
+        # away from the middle isle: groves and barrens, where a slow wave (bent by the hills) runs high or low
+        b = np.sin(X / 71 + self.phase[0] + hills * 4.0) * np.cos(Z / 89 + self.phase[1] + m * 2.0)
+        biome = np.zeros(X.shape, np.uint8)
+        biome[(b > 0.5) & (r > 130)] = DAWN_GROVES
+        biome[(b < -0.55) & (r > 130)] = STAR_BARRENS
         return {"m": m, "top": np.round(top).astype(np.int32), "thick": np.maximum(np.round(thick), 1).astype(np.int32),
-                "r": r}
+                "r": r, "biome": biome}
 
     def find_spawn(self) -> tuple[float, float, float]:
         col = self.columns(np.array([[40.0]], np.float32), np.array([[0.0]], np.float32))
@@ -297,19 +348,35 @@ class IslesGenerator(_Realm):
         land = (m > 0)[:, :, None]
         t3 = top[:, :, None]
         blk = np.where(land & (Y <= t3) & (Y >= t3 - thick[:, :, None]), B.VOIDSTONE, B.AIR).astype(np.uint8)
-        blk = np.where(land & (Y == t3), B.MOONMOSS, blk).astype(np.uint8)
+        biome = col["biome"][inner]
+        li, lj = np.nonzero((m > 0) & (top >= 0) & (top < H))  # the land, column by column: what lies on top
+        lt, lb = top[li, lj], biome[li, lj]
+        blk[li, lj, lt] = _ISLE_TOP[lb]
+        for k in (1, 2):  # ... and stardust goes two blocks down (where the isle is that thick)
+            deep = (lb == STAR_BARRENS) & (thick[li, lj] >= k) & (lt >= k)
+            if deep.any():
+                blk[li[deep], lj[deep], lt[deep] - k] = B.STARDUST
         cloud = (self.noise.fbm2(X[inner] / 45 + 700, Z[inner] / 45 + 700, 2) > 0.34) & (r > 60) & (m < 0.05)
         blk[:, :, 98:100][cloud] = B.CLOUD
         x, z, ix, iz, roll, variant = self._candidates(x0, z0)
-        cm, ct, cr = col["m"][ix, iz], col["top"][ix, iz], col["r"][ix, iz]
-        trees = _pale_trees()
+        cm, ct, cr, cbm = col["m"][ix, iz], col["top"][ix, iz], col["r"][ix, iz], col["biome"][ix, iz]
+        trees, dawn = _pale_trees(), _dawn_trees()
+        wild = bool(cbm.any())  # (most regions near the middle have none of the newer lands)
         for v in range(6):
-            sel = (variant == v) & (cm > 0.12) & (cr > 32) & (roll < 0.09)
+            sel = (variant == v) & (cm > 0.12) & (cr > 32) & (roll < 0.09) & (cbm == SKY_ISLES)
             if sel.any():
                 _stamp(blk, x0, z0, x[sel], ct[sel] + 1, z[sel], trees[v])
-            sel = (variant == v) & (cm > 0.05) & (cr > 30) & (roll > 0.955)
+            sel = (variant == v) & (cm > 0.05) & (cr > 30) & (roll > 0.955) & (cbm != DAWN_GROVES)
             if sel.any():
                 _stamp(blk, x0, z0, x[sel], ct[sel] + 1, z[sel], _FEATURES[CRYSTAL_HOLLOWS][v])
+            if not wild:
+                continue
+            sel = (variant == v) & (cm > 0.1) & (roll < 0.15) & (cbm == DAWN_GROVES)
+            if sel.any():
+                _stamp(blk, x0, z0, x[sel], ct[sel] + 1, z[sel], dawn[v])
+            sel = (variant == v) & (cm > 0.08) & (roll < 0.06) & (cbm == STAR_BARRENS)
+            if sel.any():
+                _stamp(blk, x0, z0, x[sel], ct[sel] + 1, z[sel], _PILLARS[v])
         cells: dict = {}
         if abs(x0) <= S and abs(z0) <= S:  # the arena: an altar between four lit pillars
             cells[0, ISLE_TOP + 1, 0] = B.STORM_ALTAR
@@ -319,7 +386,7 @@ class IslesGenerator(_Realm):
         for i, j in self._site_cells(x0, z0, SPIRE_CELL, 6):
             self._spire(cells, i, j)
         _cells(blk, x0, z0, cells)
-        return blk, np.zeros((S, S), np.uint8)
+        return blk, biome.copy()
 
     def _spire(self, cells: dict, i: int, j: int) -> None:
         """A lone tower: a stair winding up inside to a lit room with treasure."""
@@ -356,6 +423,7 @@ class IslesGenerator(_Realm):
         cells[x - 1, y + height + 1, z + 1] = B.GOLD_BLOCK
         cells[x + 1, y + height + 1, z + 1] = B.DIAMOND_BLOCK
         cells[x, y + height + 1, z + 1] = B.IRON_BLOCK
+        cells[x - 1, y + height + 1, z - 1] = B.OLD_CHEST
         for k in (6, 12, 18, height + 2):  # windows
             for wx, wz in ((x - 3, z), (x + 3, z), (x, z - 3), (x, z + 3)):
                 cells[wx, y + k, wz] = B.GLASS

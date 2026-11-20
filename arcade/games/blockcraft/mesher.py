@@ -50,6 +50,25 @@ for _lv in range(1, 7):
 # 50, 51: a leaf lying flat on water, seen from above and from below
 SHAPES += [((0, -0.11, 1), (1, 0, 0), (0, 0, -1), (0, 0, 1, 1), 1.0),
            ((0, -0.11, 0), (1, 0, 0), (0, 0, 1), (0, 0, 1, 1), 0.6)]
+# 52: signal dust, flat on the ground; 53..57: a button (a 6 x 2 x 6 pixel stud): +x, -x, top, +z, -z
+_a, _b6, _s6, _h2 = 5 / 16, 11 / 16, 6 / 16, 2 / 16
+SHAPES += [((0, 1 / 32, 1), (1, 0, 0), (0, 0, -1), (0, 0, 1, 1), 1.0),
+           ((_b6, 0, _b6), (0, 0, -_s6), (0, _h2, 0), (_a, _a, _s6, _h2), 0.6),
+           ((_a, 0, _a), (0, 0, _s6), (0, _h2, 0), (_a, _a, _s6, _h2), 0.6),
+           ((_a, _h2, _b6), (_s6, 0, 0), (0, 0, -_s6), (_a, _a, _s6, _s6), 1.0),
+           ((_a, 0, _b6), (_s6, 0, 0), (0, _h2, 0), (_a, _a, _s6, _h2), 0.8),
+           ((_b6, 0, _a), (-_s6, 0, 0), (0, _h2, 0), (_a, _a, _s6, _h2), 0.8)]
+# 58..77: a door leaf (3 pixels thick), five faces each (+x, -x, +z, -z, top): shut across the middle of its block
+# along x, swung open against the block's west side, shut along z, swung open against its north side
+DOOR_SHAPE0 = len(SHAPES)
+for _x0, _x1, _z0, _z1 in ((0, 1, 6.5 / 16, 9.5 / 16), (0, 3 / 16, 0, 1), (6.5 / 16, 9.5 / 16, 0, 1),
+                           (0, 1, 0, 3 / 16)):
+    _dx, _dz = _x1 - _x0, _z1 - _z0
+    SHAPES += [((_x1, 0, _z1), (0, 0, -_dz), (0, 1, 0), (0, 0, _dz, 1), 0.6),
+               ((_x0, 0, _z0), (0, 0, _dz), (0, 1, 0), (0, 0, _dz, 1), 0.6),
+               ((_x0, 0, _z1), (_dx, 0, 0), (0, 1, 0), (0, 0, _dx, 1), 0.8),
+               ((_x1, 0, _z0), (-_dx, 0, 0), (0, 1, 0), (0, 0, _dx, 1), 0.8),
+               ((_x0, 1, _z1), (_dx, 0, 0), (0, 0, -_dz), (0, 0, _dx, _dz), 1.0)]
 F_FLIP, F_ANIM, F_WAVE, F_GLOW = 1, 2, 4, 8  # flag bits of a face
 
 DIRS = ((1, 0, 0), (-1, 0, 0), (0, 0, 1), (0, 0, -1), (0, 1, 0), (0, -1, 0))  # (dx, dz, dy) the faces 0..5 look
@@ -88,9 +107,16 @@ _PLANT_FLAGS = np.full(256, F_WAVE, np.uint8)  # plants sway, but for the stiff 
 _PLANT_FLAGS[list(B.STIFF)] = 0
 _PLANT_FLAGS[list(B.GLOW_PLANTS)] |= F_GLOW
 _PLANT_FLAGS[B.TORCH] = F_GLOW
-_PLANT_GROUP = np.zeros(256, np.uint8)  # 0 crossed planes, 1 a torch, 2 flat
+_PLANT_GROUP = np.zeros(256, np.uint8)  # 0 crossed planes, 1 a torch, 2 flat on water, 3 dust, 4 a button, 5..8 doors
 _PLANT_GROUP[B.TORCH] = 1
 _PLANT_GROUP[list(B.FLAT)] = 2
+_PLANT_GROUP[list(B.DUST_LEVELS)] = 3
+_PLANT_GROUP[[B.BUTTON, B.BUTTON_ON]] = 4
+for _i, _b in enumerate(B.DOORS):  # (axis * 4 + open * 2 + top) -> the leaf's place: axis * 2 + open
+    _PLANT_GROUP[_b] = 5 + (_i >> 1)
+_GROUP_SHAPES = (_PLANT_SHAPES, _TORCH_SHAPES, _FLAT_SHAPES, np.array([52], np.uint8),
+                 np.arange(53, 58, dtype=np.uint8),
+                 *(np.arange(DOOR_SHAPE0 + 5 * _k, DOOR_SHAPE0 + 5 * _k + 5, dtype=np.uint8) for _k in range(4)))
 
 
 # --- light -----------------------------------------------------------------------------------------------------------
@@ -283,7 +309,8 @@ def build_mesh(blk: np.ndarray, sky: np.ndarray, bl: np.ndarray, x0: int, z0: in
         lb = (((w >> 4) & 15) * 17).astype(np.uint8)
         parts = [solid]
         group = _PLANT_GROUP[pb]
-        for g, shapes in enumerate((_PLANT_SHAPES, _TORCH_SHAPES, _FLAT_SHAPES)):
+        simple = not group.any()  # (nearly always: nothing but plants)
+        for g, shapes in enumerate(_GROUP_SHAPES[:1] if simple else _GROUP_SHAPES):
             sel = group == g
             k = int(sel.sum())
             if not k:

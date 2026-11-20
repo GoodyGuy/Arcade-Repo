@@ -335,8 +335,8 @@ _icons: dict = {}
 
 def _iso_block(b: int, n: int) -> np.ndarray:
     """An isometric little block (top, front-left and front-right faces) like the inventory icons."""
-    if b == B.FURNACE:
-        b = B.FURNACE + 2  # facing south: the front shows
+    if b in (B.FURNACE, B.CHEST):
+        b += 2  # facing south: the front shows
     yy, xx = np.mgrid[0:n, 0:n].astype(np.float32) + 0.5
     m = n * 0.06
     cx = n / 2
@@ -392,7 +392,11 @@ def draw_item(p: QPainter, x: float, y: float, item: int, count: int = 1, damage
     p.drawImage(QRectF(x, y, size, size), item_icon(item, size * max(gs, 1)))
     if count > 1:
         draw_text(p, x + size + 1, y + size - 7, str(count), WHITE, align="right")
-    md = B.max_damage(item)
+    md = B.max_wear(item, damage)
+    rune, damage = B.rune_of(damage), B.wear_of(damage)
+    if rune:  # a rune's mark in the corner
+        p.fillRect(QRectF(x, y, 3, 3), QColor(20, 30, 60))
+        p.fillRect(QRectF(x + 1, y + 1, 1, 1), QColor(140, 240, 226))
     if md and damage > 0:
         frac = max(0.0, 1 - damage / md)
         p.fillRect(QRectF(x + 2, y + 13, 13, 2), QColor(0, 0, 0))

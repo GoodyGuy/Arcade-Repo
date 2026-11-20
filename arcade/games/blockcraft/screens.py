@@ -194,7 +194,7 @@ class ScreensMixin:
         if self.screen == "game" and self.player is not None:
             if not self.hide_hud and self.overlay not in ("dead",):
                 self._paint_hud(p, gw, gh)
-            if self.overlay in ("inventory", "crafting", "furnace"):
+            if self.overlay in ("inventory", "crafting", "furnace", "chest", "runes"):
                 self._paint_container(p, gw, gh)
             elif self.overlay in ("recipes", "advancements"):
                 self.paint_book(p, gw, gh)
@@ -477,6 +477,9 @@ class ScreensMixin:
         chunks = int(self.opts.get("chunks", 10))
         boxes = self._entity_boxes(a, eye, chunks * 16.0)
         dots = self._particle_dots(eye) if self.opts.get("particles", True) else None
+        fall = self.weather_dots(eye)  # rain or snow around the camera (None under a clear sky)
+        if fall is not None:
+            dots = fall if dots is None else np.concatenate([dots, fall])
         img = self.renderer.render(self.world, eye, yaw, pitch, roll, fov, rw, rh, env, chunks, boxes, dots, crack,
                                    fancy=bool(self.opts.get("fancy", True)),
                                    samples=4 if self.opts.get("aa", True) else 0,
@@ -543,9 +546,12 @@ class ScreensMixin:
         lo = np.array([bx - e, by - e, bz - e])
         hi = np.array([bx + 1 + e, by + 1 + e, bz + 1 + e])
         b = self.world.get(bx, by, bz)
-        if B.KIND[b] == B.K_CROSS:  # plants: a smaller box
+        if b in B.DOORS or b in B.DUST_LEVELS:  # a door: its whole block; dust: flat on the ground
+            hi = np.array([bx + 1 + e, by + (1 + e if b in B.DOORS else 0.07), bz + 1 + e])
+        elif B.KIND[b] == B.K_CROSS:  # plants: a smaller box
             lo = np.array([bx + 0.2, by, bz + 0.2])
-            hi = np.array([bx + 0.8, by + (0.6 if b == B.TORCH else 0.8), bz + 0.8])
+            hi = np.array([bx + 0.8, by + (0.6 if b == B.TORCH else (0.14 if b in (B.BUTTON, B.BUTTON_ON) else 0.8)),
+                           bz + 0.8])
         tan = math.tan(math.radians(fov) / 2)
         aspect = w / h
         o = np.array(eye)
@@ -593,7 +599,7 @@ class ScreensMixin:
     def _paint_hand(self, p: QPainter, w: int, h: int) -> None:
         """The held item - a little textured block, a tool / item sprite, or the bare arm - in 3D at the bottom right
         (camera space, the real game's fixed 70 degree hand view), bobbing with the walk and swinging when used."""
-        if self.overlay is not None and self.overlay not in ("inventory", "crafting", "furnace"):
+        if self.overlay is not None and self.overlay not in ("inventory", "crafting", "furnace", "chest", "runes"):
             return
         pl = self.player
         held = self.inv.held
@@ -678,7 +684,7 @@ class ScreensMixin:
                 if kind == "sleeve" and face in ("+x", "-x", "+y", "-y"):  # a reflective stripe
                     rgba[:, 6:9, :3] = (235, 235, 210)
             else:
-                b = B.FURNACE + 2 if item == B.FURNACE else item
+                b = item + 2 if item in (B.FURNACE, B.CHEST) else item
                 tex = {"+y": 2, "-y": 3, "+z": 4, "-z": 5, "+x": 0, "-x": 1}[face]
                 rgba = B.ATLAS[B.FACE_TEX[b, tex]].astype(np.float32)
             rgba = rgba.copy()
@@ -726,7 +732,7 @@ class ScreensMixin:
         if not self.creative:
             self._paint_bars(p, cx, gh)
         if self.held_name_time > 0 and self.inv.held is not None:
-            name = B.NAMES.get(self.inv.held[0], "")
+            name = B.item_name(*self.inv.held[::2])
             alpha = min(1.0, self.held_name_time)
             y = gh - 59 if not self.creative else gh - 35
             col = tuple(int(255 * alpha) for _ in range(3))
@@ -828,7 +834,7 @@ class ScreensMixin:
                 f"Facing: {f[0]} ({f[1]}) ({yaw:.1f} / {pl.pitch:.1f})",
                 f"Realm: {self.dim}  Biome: {self.world.biome_name(pl.x, pl.z)}",
                 f"Light: {max(int(sky * self.env.daylight), block)} ({sky} sky, {block} block)",
-                f"Day {self.day_number}, {hours:02d}:00  ({'flying' if pl.flying else self.mode})"]
+                f"Day {self.day_number}, {hours:02d}:00  ({'flying' if pl.flying else self.mode})  {self.weather}"]
         right = [f"Python {platform.python_version()} 64bit", f"CPU: {os.cpu_count()}x threads",
                  f"Display: {self.width()}x{self.height()}", self.renderer.gpu[:34],
                  f"Helpers: {self.pool.count} {'processes' if self.pool.processes else 'threads'}"
@@ -885,7 +891,55 @@ class ScreensMixin:
             out.append((("out",), ox + 124, oy + 35))
         elif self.overlay == "furnace":
             out += [(("fur", 0), ox + 56, oy + 17), (("fur", 1), ox + 56, oy + 53), (("fur", 2), ox + 116, oy + 35)]
+        elif self.overlay == "chest":
+            for k in range(27):
+                out.append((("che", k), ox + 8 + (k % 9) * 18, oy + 17 + (k // 9) * 18))
+        elif self.overlay == "runes":
+            out += [(("run", 0), ox + 14, oy + 20), (("run", 1), ox + 14, oy + 48)]
         return out
+
+    def rune_row_rect(self, k: int) -> QRect:
+        ox, oy = self.panel_origin()
+        return QRect(ox + 40, oy + 18 + k * 13, 128, 12)
+
+    def rune_row_at(self, gx: float, gy: float) -> int | None:
+        for k in range(len(self.rune_rows())):
+            if self.rune_row_rect(k).contains(int(gx), int(gy)):
+                return k
+        return None
+
+    def _paint_runes(self, p: QPainter, ox: int, oy: int) -> str | None:
+        """The right side of the rune bench: the runes the item on it may bear. Gives the hint for the row under the
+        mouse."""
+        dark = (64, 64, 64)
+        G.draw_text(p, ox + 8, oy + 6, "Rune Bench", dark, False)
+        G.draw_text(p, ox + 168, oy + 6, f"Level {self.level()[0]}", (40, 110, 40), False, align="right")
+        G.draw_text(p, ox + 22, oy + 39, "+", dark, False, align="center")
+        rows = self.rune_rows()
+        s, gem = self.rune_slots
+        if not rows:
+            for i, line in enumerate(("Lay a tool, a weapon or a", "piece of armour on the bench,", "and trade gems under it.")):
+                G.draw_text(p, ox + 104, oy + 24 + i * 11, line, (96, 96, 96), False, align="center")
+            return None
+        mx, my = self.mouse_gui
+        hint = None
+        have = B.rune_of(s[2])
+        for k, (rune, levels, ok) in enumerate(rows):
+            r = self.rune_row_rect(k)
+            hover = r.contains(int(mx), int(my))
+            mine = rune == have
+            p.fillRect(r, QColor(44, 60, 96) if mine else (QColor(92, 104, 150) if hover and ok else QColor(120, 120, 128)))
+            p.fillRect(r.adjusted(1, 1, -1, -1), QColor(30, 40, 70) if mine else (QColor(70, 84, 132) if ok else QColor(92, 92, 98)))
+            col = (150, 240, 226) if mine else ((255, 255, 255) if ok else (150, 150, 150))
+            G.draw_text(p, r.x() + 4, r.y() + 2, B.RUNES[rune], col, False)
+            cost = "borne" if mine else (f"{levels} levels" if not self.creative else "free")
+            G.draw_text(p, r.x() + r.width() - 4, r.y() + 2, cost, col if ok or mine else (176, 96, 88), False,
+                        align="right")
+            if hover:
+                hint = f"{B.RUNES[rune]}: {B.RUNE_TEXT[rune]}"
+                if not ok and not mine:
+                    hint += " (needs a gem)" if gem is None else " (not enough levels)"
+        return hint
 
     def slot_at(self, gx: float, gy: float) -> tuple | None:
         for ref, x, y in self.slot_layout():
@@ -925,8 +979,11 @@ class ScreensMixin:
             prog = f.progress / I.SMELT_TIME if f is not None else 0.0
             self._paint_flame(p, ox + 57, oy + 37, burn)
             self._paint_arrow(p, ox + 79, oy + 34, prog)
+        elif self.overlay == "chest":
+            G.draw_text(p, ox + 8, oy + 6, "Chest", dark, False)
+        rune_hint = self._paint_runes(p, ox, oy) if self.overlay == "runes" else None
         if not creative and self.overlay != "inventory":
-            G.draw_text(p, ox + 8, oy + 72, "Inventory", dark, False)
+            G.draw_text(p, ox + 8, oy + (73 if self.overlay == "chest" else 72), "Inventory", dark, False)
         for ref, x, y in self.slot_layout():
             big = ref == ("out",)
             if big:
@@ -947,7 +1004,9 @@ class ScreensMixin:
         elif hover is not None:
             s = self.get_slot(hover)
             if s is not None:
-                self._paint_tooltip(p, mx + 12, my - 12, B.NAMES.get(s[0], "?"), gw)
+                self._paint_tooltip(p, mx + 12, my - 12, B.item_name(s[0], s[2]), gw)
+        elif rune_hint:
+            self._paint_tooltip(p, mx + 12, my - 12, rune_hint, gw)
 
     def _paint_tooltip(self, p: QPainter, x: float, y: float, text: str, gw: int) -> None:
         w = G.text_width(text)

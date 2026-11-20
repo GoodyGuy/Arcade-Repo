@@ -897,6 +897,8 @@ class Generator:
             cells[hx + inx - (1 if not ddx else 0), hy + 1, hz + inz - (1 if not ddz else 0)] = \
                 (B.CRAFTING_TABLE, B.FURNACE + door, B.BOOKSHELF, B.HAY)[k % 4]
             cells[hx, hy + 5, hz] = B.GLOWSTONE  # a lamp in the roof
+            if k % 2 == 0:  # every other hut keeps a chest between the bed and the bench
+                cells[hx + inx, hy + 1, hz + inz] = B.OLD_CHEST
         # the field: wheat on wet farmland around a ditch, fenced with logs; hay beside it
         fx, fy, fz = site["field"]
         box(fx - 4, fy - 2, fz - 3, fx + 4, fy, fz + 3, B.DIRT)

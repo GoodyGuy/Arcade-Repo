@@ -76,6 +76,7 @@ class LifeMixin:
                 self.health = min(20.0, self.health + 4)
                 self.mobs = [m for m in self.mobs if not m.hostile]  # the night's creatures are gone
                 self.say("Good morning")
+                self.set_weather("clear")
                 self.award("sleep")
 
     def life_tick(self) -> None:
@@ -124,6 +125,8 @@ class LifeMixin:
     def _wet(self, x: int, y: int, z: int) -> bool:
         """Water within four blocks of a field block (at its own height)."""
         get, fluid = self.world.get, B.FLUID
+        if self.rain > 0.3 and self.raining_at(x, y + 1, z):
+            return True  # rain does it too
         return any(fluid[get(x + dx, y, z + dz)] for dx in range(-4, 5) for dz in range(-4, 5))
 
     def _grow(self, x: int, y: int, z: int, b: int, changes: list) -> None:
@@ -183,6 +186,8 @@ class LifeMixin:
         if m is not None and m.kind == "settler":
             if fresh:
                 self._trade(m)
+            return True
+        if m is not None and self.use_mob(m, fresh):
             return True
         t = self.target
         if t is None:
@@ -245,7 +250,8 @@ class LifeMixin:
             return below == B.WATER
         if block == B.DEAD_BUSH:
             return below in (B.SAND, B.DIRT, B.GRASS, B.RED_SAND, B.DRY_GRASS, *B.TERRACOTTAS)
-        if block in (B.RED_MUSHROOM, B.BROWN_MUSHROOM, B.STALAGMITE, B.SULFUR_CRYSTAL, B.WISP_BLOOM):
+        if block in (B.RED_MUSHROOM, B.BROWN_MUSHROOM, B.STALAGMITE, B.SULFUR_CRYSTAL, B.WISP_BLOOM, B.LEVER,
+                     B.BUTTON):
             return bool(B.SOLID[below])
         return below in B.SOILS
 
@@ -292,10 +298,12 @@ class LifeMixin:
         from app.arcade.games.blockcraft.world import World
 
         p, r = self.player, self.record
+        self.dismount()  # (a horse stays in its own realm)
         self.store_world()
         r[f"pos_{self.dim}"] = [round(p.x, 2), round(p.y, 2), round(p.z, 2)]
         self.dim = r["dim"] = dim
         self.mobs, self.drops, self.falling, self.furnaces = [], [], [], {}
+        self._reset_extras()
         self.water = Water()
         self.hamlets_alive = set()
         self.mining = self.target = self.target_mob = self.sleep = None
@@ -338,6 +346,9 @@ class LifeMixin:
         self._unbury(p)
         p.remember()
         self._load_furnaces(r)
+        self._load_extras(r)
+        if self.dim == "over":
+            self._load_animals(r)
         self.env.realm = self.dim
         self.env.set_time(self.tod)
         self.travelling = False

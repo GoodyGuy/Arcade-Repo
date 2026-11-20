@@ -583,6 +583,15 @@ HERD = {"polar_bear": (1, 2), "camel": (1, 3), "frog": (1, 3), "parrot": (1, 3),
 DRY_BIOMES = frozenset({"desert", "painted_mesa", "mesa_woodland", "mesa_spires", "savanna", "savanna_plateau",
                         "savanna_crags"})  # where mummies walk at night
 COLD_BIOMES = frozenset({"snowy_plains", "ice_spires", "taiga", "frozen_ocean"})  # ... and wights
+# what each animal eats from the hand: it follows whoever holds it, and two that were fed have young
+FOOD_OF = {"cow": (B.WHEAT_ITEM,), "sheep": (B.WHEAT_ITEM,), "pig": (B.APPLE, B.PUMPKIN, B.BROWN_MUSHROOM),
+           "chicken": (B.WHEAT_SEEDS,), "rabbit": (*B.FLOWERS, B.TALL_GRASS), "horse": (B.WHEAT_ITEM, B.APPLE, B.HAY, B.SUGAR),
+           "camel": (B.CACTUS, B.DEAD_BUSH, B.WHEAT_ITEM), "frog": (B.SLIME_BALL,), "parrot": (B.WHEAT_SEEDS,),
+           "polar_bear": (B.FISH, B.COOKED_FISH)}
+BABY_TIME = 240.0  # seconds until a young animal is grown
+LOVE_TIME = 30.0  # seconds a fed animal looks for another
+BREED_REST = 300.0  # seconds before it may have young again
+BABY_SCALE = 0.55
 
 
 def ground_of(kind: str) -> tuple:
@@ -664,11 +673,38 @@ class Mob(Body):
         self.offer_shown = -1
         self.dive = 0.0
         self.trail: list = []  # where a wyrm has been (its body follows)
+        self.baby = 0.0  # seconds until it is grown (0: an adult)
+        self.love = 0.0  # seconds it still looks for a mate (it was fed)
+        self.breed_rest = 0.0  # seconds until it may be fed for young again
+        self.mate: Mob | None = None
+        self.parent: Mob | None = None  # the one a young animal keeps close to
+        self.saddled = False  # a horse that may be ridden
+        self.ridden = False  # ... and is, right now (the game moves it: see extras.py)
         self.mode, self.angle, self.phase_t, self.aim = "circle", float(rng.uniform(0, 6.28)), 6.0, (x, y, z)
 
     @property
     def dead(self) -> bool:
         return self.health <= 0
+
+    def make_baby(self, seconds: float = BABY_TIME) -> None:
+        """Small for a while (``seconds`` <= 0: grown now)."""
+        self.baby = max(0.0, seconds)
+        w, hgt = MOB_SIZE[self.kind]
+        k = BABY_SCALE if self.baby > 0 else 1.0
+        self.width, self.height = w * k, hgt * k
+
+    def _lure(self, player, dist: float) -> tuple | None:  # noqa: ANN001
+        """Where an animal that is not just wandering wants to go: (x, z, how near is near enough)."""
+        mate = self.mate
+        if self.love > 0 and mate is not None and not mate.dead and mate.love > 0:
+            return mate.x, mate.z, 0.8
+        if dist < 9 and getattr(player, "held", 0) in FOOD_OF.get(self.kind, ()):
+            return player.x, player.z, 1.6 + self.width / 2
+        par = self.parent
+        if self.baby > 0 and par is not None and not par.dead and \
+                (par.x - self.x) ** 2 + (par.z - self.z) ** 2 > 9.0:
+            return par.x, par.z, 1.5
+        return None
 
     def tick(self, world, player, day: float) -> list[str]:  # noqa: ANN001
         """One AI + physics tick; returns events ("attack", "say", "burn")."""
@@ -693,6 +729,15 @@ class Mob(Body):
         speed = MOB_SPEED.get(self.kind, 0.15)
         dx, dz = player.x - self.x, player.z - self.z
         dist = math.hypot(dx, dz)
+        if self.love > 0:
+            self.love -= TICK
+        if self.breed_rest > 0:
+            self.breed_rest -= TICK
+        if self.baby > 0:
+            self.baby -= TICK
+            if self.baby <= 0:
+                self.make_baby(0.0)  # grown
+        lure = None if self.hostile or self.kind not in FOOD_OF else self._lure(player, dist)
         foe = self.foe if self.foe is not None and not self.foe.dead else None
         if foe is not None:  # a guardian goes for a monster
             fx, fz = foe.x - self.x, foe.z - self.z
@@ -726,6 +771,12 @@ class Mob(Body):
                 forward = 1.0
                 if self.rng.random() < 0.1:
                     self.target_yaw = self.yaw + float(self.rng.uniform(-90, 90))
+            elif lure is not None:  # to a mate, to food held out, or (the young) back to a parent
+                lx, lz = lure[0] - self.x, lure[1] - self.z
+                self.target_yaw = math.degrees(math.atan2(-lx, lz))
+                forward = 1.0 if math.hypot(lx, lz) > lure[2] else 0.0
+                speed = max(speed, 0.17)
+                self.moving, self.wander, self.head_pitch = False, 1.0, 0.0
             else:
                 self.wander -= TICK
                 if self.wander <= 0:
@@ -904,7 +955,18 @@ class Mob(Body):
                            self.attack_anim)
 
     def to_json(self) -> list:
-        return [self.kind, round(self.x, 2), round(self.y, 2), round(self.z, 2), round(self.yaw), round(self.health)]
+        return [self.kind, round(self.x, 2), round(self.y, 2), round(self.z, 2), round(self.yaw), round(self.health),
+                round(self.baby), int(self.saddled), round(self.breed_rest)]
+
+    def load_more(self, more: list) -> None:
+        """What ``to_json`` writes after the health (worlds saved before there was any have none of it)."""
+        try:
+            if len(more) > 0 and float(more[0]) > 0:
+                self.make_baby(min(float(more[0]), BABY_TIME))
+            self.saddled = bool(more[1]) if len(more) > 1 else False
+            self.breed_rest = max(0.0, min(float(more[2]), BREED_REST)) if len(more) > 2 else 0.0
+        except (TypeError, ValueError):
+            pass
 
 
 class ItemEntity(Body):
@@ -1023,6 +1085,24 @@ class Particles:
                                self.rng.uniform(0.02, 0.06), self.rng.uniform(-0.03, 0.03),
                                self.rng.uniform(0.6, 1.4), colour, size])
 
+    _HEART = (".#.#.", "#####", "#####", ".###.", "..#..")
+
+    def hearts(self, x: float, y: float, z: float, yaw: float, n: int = 3) -> None:
+        """Little red hearts that rise (each drawn of dots, turned to face ``yaw``)."""
+        rx, rz = math.cos(math.radians(yaw)), math.sin(math.radians(yaw))
+        px = 0.05
+        for _ in range(n):
+            hx, hy, hz = x + self.rng.uniform(-0.5, 0.5), y + self.rng.uniform(0.0, 0.5), z + self.rng.uniform(-0.5, 0.5)
+            vy, life = self.rng.uniform(0.012, 0.022), self.rng.uniform(1.0, 1.6)
+            for r, row in enumerate(self._HEART):
+                for c, ch in enumerate(row):
+                    if ch == "#":
+                        off = (c - 2) * px
+                        self.items.append([hx + rx * off, hy + (4 - r) * px, hz + rz * off, 0.0, vy, 0.0, life,
+                                           (255, 70, 96) if (r, c) != (1, 1) else (255, 190, 200), px, True])
+        if len(self.items) > 400:
+            del self.items[:len(self.items) - 400]
+
     def tick(self, world, dt: float) -> None:  # noqa: ANN001
         keep = []
         for p in self.items:
@@ -1036,7 +1116,7 @@ class Particles:
                 p[4] = 0.0
             else:
                 p[0], p[1], p[2] = nx, ny, nz
-                if p[8] < 0.15:
+                if p[8] < 0.15 and len(p) < 10:
                     p[4] -= 0.04 * k
             keep.append(p)
         self.items = keep

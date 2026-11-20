@@ -42,6 +42,16 @@ CORNFLOWER, ALLIUM, DAISY, RED_MUSHROOM, BROWN_MUSHROOM, HAY = range(91, 97)
  CLAY_TILES) = range(114, 156)
 TERRACOTTAS = (TERRACOTTA, WHITE_TERRACOTTA, ORANGE_TERRACOTTA, YELLOW_TERRACOTTA, RED_TERRACOTTA, BROWN_TERRACOTTA,
                GRAY_TERRACOTTA)
+# storage, the rune bench, the signal blocks, and more of the two realms (appended: saved worlds keep their numbers)
+CHEST = 156  # 156..159 facing N/E/S/W
+OLD_CHEST = 160  # one left in a hut or a ruin: its loot is made when it is first opened, then it is a chest
+RUNE_BENCH, LEVER, LEVER_ON, BUTTON, BUTTON_ON, DUST, DUST_ON, LAMP, LAMP_ON = range(161, 170)
+DOOR = 170  # 170 + axis * 4 + open * 2 + top: the lower and the upper half, along x or z, shut or open
+RIMESTONE, FROSTLIGHT, TARSTONE, AMBER, ROSEMOSS, DAWN_LEAVES, STARDUST, WINDSTONE = range(178, 186)
+DOORS = tuple(range(DOOR, DOOR + 8))
+# signal dust laid on the ground, by how strong the signal in it is: none (DUST), 1 (DUST_ON) .. 15
+DUST_LEVELS = (DUST, DUST_ON, *range(186, 200))
+SIGNAL_BLOCKS = (LEVER, LEVER_ON, BUTTON, BUTTON_ON, *DUST_LEVELS, LAMP, LAMP_ON, *DOORS)
 BORDER = 255  # not loaded yet / outside the world (never placed)
 
 # --- item ids (not blocks) ---------------------------------------------------------------------------------------
@@ -56,6 +66,7 @@ ARMOR_PIECES = ("helmet", "chestplate", "leggings", "boots")
 ARMOR_POINTS = ((2, 6, 5, 2), (2, 5, 3, 1), (3, 8, 6, 3))  # of 20: each takes 4 % off a blow
 ARMOR_USES = ((165, 240, 225, 195), (77, 112, 105, 91), (363, 528, 495, 429))
 RAW_RABBIT, COOKED_RABBIT, RABBIT_HIDE, LEATHER = range(323, 327)
+SADDLE = 327
 TOOL0 = 272  # 272 + material * 4 + kind
 TOOL_KINDS = ("pickaxe", "axe", "shovel", "sword")
 MATERIALS = ("wooden", "stone", "iron", "golden", "diamond")
@@ -87,6 +98,54 @@ def armor_info(item: int) -> tuple[int, int] | None:
     return None
 
 
+# --- runes: one may be put on a tool, a weapon or a piece of armour at a rune bench -------------------------------
+# The third number of a stack [item, count, damage] holds the wear in its low 16 bits and the rune above them, so a
+# rune goes wherever the item goes (slots, drops, chests, the saved world) and two items with different runes
+# never stack.
+RUNE_SHIFT = 16
+R_SWIFT, R_LASTING, R_BOUNTY, R_KEEN, R_WARD, R_LIGHTFOOT = range(1, 7)
+RUNES = ("", "Swift", "Lasting", "Bounty", "Keen", "Ward", "Lightfoot")
+RUNE_TEXT = ("", "digs much faster", "lasts twice as long", "now and then a second drop", "strikes harder",
+             "takes more off every blow", "falls softly")
+RUNE_LEVELS = (0, 3, 2, 4, 3, 3, 2)  # the experience levels each costs (and one trade gem)
+
+
+def rune_of(damage: int) -> int:
+    """The rune (0: none) kept in a stack's damage number."""
+    r = (int(damage) >> RUNE_SHIFT) & 0xFF
+    return r if r < len(RUNES) else 0
+
+
+def wear_of(damage: int) -> int:
+    """How worn an item is (the damage number without its rune)."""
+    return int(damage) & 0xFFFF
+
+
+def with_rune(damage: int, rune: int) -> int:
+    return wear_of(damage) | (int(rune) << RUNE_SHIFT)
+
+
+def runes_for(item: int) -> tuple:
+    """The runes that may be put on an item (none for anything that is no tool, weapon or armour)."""
+    info = tool_info(item)
+    if info is not None:
+        return {0: (R_SWIFT, R_BOUNTY, R_LASTING), 1: (R_SWIFT, R_KEEN, R_BOUNTY, R_LASTING),
+                2: (R_SWIFT, R_BOUNTY, R_LASTING), 3: (R_KEEN, R_LASTING)}[info[1]]
+    if hoe_material(item) is not None:
+        return (R_LASTING,)
+    arm = armor_info(item)
+    if arm is not None:
+        return (R_WARD, R_LIGHTFOOT, R_LASTING) if arm[1] == 3 else (R_WARD, R_LASTING)
+    return ()
+
+
+def item_name(item: int, damage: int = 0) -> str:
+    """An item's name, with its rune when it bears one."""
+    name = NAMES.get(item, "?")
+    rune = rune_of(damage)
+    return f"{name} ({RUNES[rune]} rune)" if rune else name
+
+
 WOOL_COLOURS = ((233, 236, 236), (240, 118, 19), (189, 68, 179), (58, 175, 217), (248, 198, 39), (112, 185, 25),
                 (237, 141, 172), (62, 68, 71), (142, 142, 134), (21, 137, 145), (121, 42, 172), (53, 57, 157),
                 (114, 71, 40), (84, 109, 27), (161, 39, 34), (20, 21, 25))
@@ -100,7 +159,7 @@ NAMES: dict[int, str] = {
     STONE: "Stone", GRASS: "Grass Block", DIRT: "Dirt", COBBLE: "Cobblestone", OAK_PLANKS: "Oak Planks",
     BEDROCK: "Bedrock", WATER: "Water", LAVA: "Lava", SAND: "Sand", GRAVEL: "Gravel", GOLD_ORE: "Gold Ore",
     IRON_ORE: "Iron Ore", COAL_ORE: "Coal Ore", OAK_LOG: "Oak Log", OAK_LEAVES: "Oak Leaves", GLASS: "Glass",
-    DIAMOND_ORE: "Diamond Ore", REDSTONE_ORE: "Redstone Ore", BRICKS: "Bricks", TNT: "TNT", BOOKSHELF: "Bookshelf",
+    DIAMOND_ORE: "Diamond Ore", REDSTONE_ORE: "Signal Ore", BRICKS: "Bricks", TNT: "TNT", BOOKSHELF: "Bookshelf",
     MOSSY_COBBLE: "Mossy Cobblestone", OBSIDIAN: "Obsidian", CRAFTING_TABLE: "Crafting Table", FURNACE: "Furnace",
     BIRCH_LOG: "Birch Log", BIRCH_LEAVES: "Birch Leaves", BIRCH_PLANKS: "Birch Planks", SNOW: "Snow Block",
     SANDSTONE: "Sandstone", STONE_BRICKS: "Stone Bricks", GLOWSTONE: "Glowstone", IRON_BLOCK: "Block of Iron",
@@ -128,17 +187,28 @@ NAMES: dict[int, str] = {
     SUNFLOWER_TOP: "Sunflower", DRY_TUFT: "Dry Grass", LANTERN_VINE: "Lantern Vine", GLOOMSTONE: "Gloomstone",
     GLOOM_LICHEN: "Gloom Lichen", WISP_BLOOM: "Wisp Bloom", SULFUR: "Sulfur Stone",
     SULFUR_CRYSTAL: "Sulfur Crystal", CLAY_TILES: "Clay Tiles",
+    CHEST: "Chest", OLD_CHEST: "Old Chest", RUNE_BENCH: "Rune Bench", LEVER: "Lever", LEVER_ON: "Lever",
+    BUTTON: "Button", BUTTON_ON: "Button", DUST: "Signal Dust", DUST_ON: "Signal Dust", LAMP: "Signal Lamp",
+    LAMP_ON: "Signal Lamp", RIMESTONE: "Rimestone", FROSTLIGHT: "Frostlight", TARSTONE: "Tarstone",
+    AMBER: "Amber Block", ROSEMOSS: "Rosemoss", DAWN_LEAVES: "Dawn Leaves", STARDUST: "Stardust",
+    WINDSTONE: "Windstone", SADDLE: "Saddle",
     RAW_RABBIT: "Raw Rabbit", COOKED_RABBIT: "Cooked Rabbit", RABBIT_HIDE: "Rabbit Hide", LEATHER: "Leather",
     WHEAT_SEEDS: "Wheat Seeds", WHEAT_ITEM: "Wheat",
     BREAD: "Bread", SUGAR: "Sugar", BUCKET: "Bucket", WATER_BUCKET: "Water Bucket", FISH: "Raw Fish",
     COOKED_FISH: "Cooked Fish", FEATHER: "Feather", CHICKEN: "Raw Chicken", COOKED_CHICKEN: "Cooked Chicken",
     STRING: "String", SLIME_BALL: "Slime Ball", GEM: "Trade Gem",
     STICK: "Stick", COAL: "Coal", IRON_INGOT: "Iron Ingot", GOLD_INGOT: "Gold Ingot", DIAMOND: "Diamond",
-    REDSTONE: "Redstone Dust", APPLE: "Apple", PORK: "Raw Porkchop", COOKED_PORK: "Cooked Porkchop",
+    REDSTONE: "Signal Dust", APPLE: "Apple", PORK: "Raw Porkchop", COOKED_PORK: "Cooked Porkchop",
     BEEF: "Raw Beef", STEAK: "Steak", FLINT: "Flint", FLINT_STEEL: "Flint and Steel", ROTTEN_FLESH: "Rotten Flesh",
 }
 for _i in range(1, 8):
     NAMES[FURNACE + _i] = "Furnace"
+for _i in range(1, 4):
+    NAMES[CHEST + _i] = "Chest"
+for _b in DOORS:
+    NAMES[_b] = "Door"
+for _b in DUST_LEVELS:
+    NAMES[_b] = "Signal Dust"
 for _i, _n in enumerate(WOOL_NAMES):
     NAMES[WOOL + _i] = f"{_n} Wool"
 for _m, _mn in enumerate(MATERIALS):
@@ -192,6 +262,12 @@ _SOLID = {STONE: (1.5, 0, 1, "stone"), GRASS: (0.6, 2, 0, "grass"), DIRT: (0.5, 
           BLACKWOOD_PLANKS: (2.0, 1, 0, "wood"), MANGROVE_LOG: (2.0, 1, 0, "wood"),
           MANGROVE_PLANKS: (2.0, 1, 0, "wood"), GLOOMSTONE: (2.2, 0, 1, "stone"),
           GLOOM_LICHEN: (2.2, 0, 1, "stone"), SULFUR: (1.2, 0, 1, "stone"), CLAY_TILES: (1.6, 0, 1, "stone")}
+_SOLID.update({OLD_CHEST: (2.5, 1, 0, "wood"), RUNE_BENCH: (3.5, 0, 1, "stone"), LAMP: (0.3, -1, 0, "glass"),
+               LAMP_ON: (0.3, -1, 0, "glass"), RIMESTONE: (1.8, 0, 1, "stone"), FROSTLIGHT: (0.5, -1, 0, "glass"),
+               TARSTONE: (1.6, 0, 1, "stone"), AMBER: (1.2, 0, 1, "glass"), ROSEMOSS: (0.6, 2, 0, "grass"),
+               STARDUST: (0.5, 2, 0, "sand"), WINDSTONE: (2.0, 0, 1, "stone")})
+for _b in range(CHEST, CHEST + 4):
+    _SOLID[_b] = (2.5, 1, 0, "wood")
 for _b in TERRACOTTAS:
     _SOLID[_b] = (1.25, 0, 1, "stone")
 for _b, (_h, _t, _tier, _m) in _SOLID.items():
@@ -206,17 +282,25 @@ for _b in LEAVES:
     KIND[_b], HARDNESS[_b], MATERIAL[_b] = K_CUTOUT, 0.2, "grass"
 KIND[GLASS], HARDNESS[GLASS], MATERIAL[GLASS] = K_CUTOUT, 0.3, "glass"
 KIND[PALE_LEAVES], HARDNESS[PALE_LEAVES], MATERIAL[PALE_LEAVES] = K_CUTOUT, 0.2, "grass"
+KIND[DAWN_LEAVES], HARDNESS[DAWN_LEAVES], MATERIAL[DAWN_LEAVES] = K_CUTOUT, 0.2, "grass"
 KIND[WATER], HARDNESS[WATER] = K_WATER, -1
 FLOWERS = (DANDELION, POPPY, CORNFLOWER, ALLIUM, DAISY)
 CROPS = (WHEAT, WHEAT + 1, WHEAT + 2, WHEAT + 3)
 HANGING = (STALACTITE, VINE, LANTERN_VINE)  # plants that hang from the block above them
-STIFF = (STALACTITE, STALAGMITE, SULFUR_CRYSTAL, WISP_BLOOM, LILY_PAD)  # ... that do not sway in the wind
+STIFF = (STALACTITE, STALAGMITE, SULFUR_CRYSTAL, WISP_BLOOM, LILY_PAD, LEVER, LEVER_ON, BUTTON, BUTTON_ON,
+         *DUST_LEVELS, *DOORS)  # ... that do not sway in the wind (and the thin things that are no plants at all)
 FLAT = (LILY_PAD,)  # ... that lie flat (on water)
-GLOW_PLANTS = (LANTERN_VINE, WISP_BLOOM)  # ... drawn at full brightness
+GLOW_PLANTS = (LANTERN_VINE, WISP_BLOOM, *DUST_LEVELS[1:], BUTTON_ON)  # ... drawn at full brightness
 for _b in (TORCH, TALL_GRASS, DEAD_BUSH, FERN, SUGAR_CANE, SEAGRASS, KELP, OAK_SAPLING, RED_MUSHROOM, BROWN_MUSHROOM,
            *FLOWERS, *CROPS, STALACTITE, STALAGMITE, LILY_PAD, VINE, SUNFLOWER, SUNFLOWER_TOP, DRY_TUFT, LANTERN_VINE,
            WISP_BLOOM, SULFUR_CRYSTAL):
     KIND[_b], HARDNESS[_b], MATERIAL[_b] = K_CROSS, 0.0, "grass"
+# levers, buttons, signal dust and doors are thin things drawn like the plants (their own shapes: mesher.py)
+for _b, _m in ((LEVER, "wood"), (LEVER_ON, "wood"), (BUTTON, "stone"), (BUTTON_ON, "stone"),
+               *((_d, "sand") for _d in DUST_LEVELS)):
+    KIND[_b], HARDNESS[_b], MATERIAL[_b] = K_CROSS, 0.0, _m
+for _b in DOORS:
+    KIND[_b], HARDNESS[_b], TOOL[_b], MATERIAL[_b] = K_CROSS, 1.5, 1, "wood"
 MATERIAL[STALACTITE] = MATERIAL[STALAGMITE] = "stone"
 MATERIAL[SULFUR_CRYSTAL] = "glass"
 for _i in range(1, 8):
@@ -237,18 +321,22 @@ EMIT[[GLOWCAP, DEEP_CRYSTAL, STARSTONE, DEEP_GATE, SKY_GATE, STORM_ALTAR, PALE_L
 GLOWING = (GLOWCAP, DEEP_CRYSTAL, DEEP_GATE, SKY_GATE)  # drawn at full brightness
 EMIT[[LANTERN_VINE, WISP_BLOOM, GLOOM_LICHEN, SULFUR_CRYSTAL]] = 10, 8, 5, 3
 EMIT[FURNACE_LIT:FURNACE_LIT + 4] = 13
+EMIT[[LAMP_ON, RUNE_BENCH, FROSTLIGHT, AMBER, DAWN_LEAVES]] = 15, 6, 13, 12, 3
+GLOWING += (FROSTLIGHT, LAMP_ON, AMBER)
 KIND[BORDER] = K_OPAQUE
 
 OPAQUE = KIND == K_OPAQUE  # blocks light and the player's view
 SOLID = (KIND == K_OPAQUE) | (KIND == K_CUTOUT)  # collides
 SOLID[LAVA] = False
+SOLID[[DOOR, DOOR + 1, DOOR + 4, DOOR + 5]] = True  # a shut door stops what walks into it
 LIGHT_ATT = np.zeros(256, np.uint8)  # extra light loss passing through
-LIGHT_ATT[[OAK_LEAVES, BIRCH_LEAVES, SPRUCE_LEAVES, PALE_LEAVES, ACACIA_LEAVES, MANGROVE_LEAVES]] = 1
+LIGHT_ATT[[OAK_LEAVES, BIRCH_LEAVES, SPRUCE_LEAVES, PALE_LEAVES, ACACIA_LEAVES, MANGROVE_LEAVES, DAWN_LEAVES]] = 1
 LIGHT_ATT[list(DENSE_LEAVES)] = 1
 LIGHT_ATT[WATERY] = 2
 GRAVITY = {SAND, GRAVEL, RED_SAND}
 SOILS = (GRASS, DIRT, SNOWY_GRASS, FARMLAND, DRY_GRASS, MARSH_GRASS, MUD, MOSS)  # what a plant may stand on
 PLACEABLE = set(NAMES) - {WATER, LAVA, *CROPS, SUNFLOWER_TOP} - set(range(FLOW, FLOW + 8)) - set(range(256, 512))
+PLACEABLE -= {CHEST + 1, CHEST + 2, CHEST + 3, OLD_CHEST, LEVER_ON, BUTTON_ON, *DUST_LEVELS, LAMP_ON, *DOORS[1:]}
 CREATIVE_ITEMS = ([GRASS, DIRT, STONE, COBBLE, MOSSY_COBBLE, STONE_BRICKS, BRICKS, OAK_LOG, OAK_PLANKS, BIRCH_LOG,
                    BIRCH_PLANKS, SPRUCE_LOG, SPRUCE_PLANKS, OAK_LEAVES, BIRCH_LEAVES, SPRUCE_LEAVES, SAND, SANDSTONE,
                    GRAVEL, CLAY, GLASS, SNOW, SNOWY_GRASS, ICE, CACTUS, BEDROCK, OBSIDIAN,
@@ -262,14 +350,16 @@ CREATIVE_ITEMS = ([GRASS, DIRT, STONE, COBBLE, MOSSY_COBBLE, STONE_BRICKS, BRICK
                    PACKED_ICE, ACACIA_LOG, ACACIA_PLANKS, ACACIA_LEAVES, KAPOK_LOG, KAPOK_PLANKS, KAPOK_LEAVES,
                    BLACKWOOD_LOG, BLACKWOOD_PLANKS, BLACKWOOD_LEAVES, MANGROVE_LOG, MANGROVE_PLANKS, MANGROVE_LEAVES,
                    SUNFLOWER, DRY_TUFT, VINE, LILY_PAD, DRIPSTONE, STALACTITE, STALAGMITE, LANTERN_VINE, GLOOMSTONE,
-                   GLOOM_LICHEN, WISP_BLOOM, SULFUR, SULFUR_CRYSTAL]
+                   GLOOM_LICHEN, WISP_BLOOM, SULFUR, SULFUR_CRYSTAL,
+                   CHEST, RUNE_BENCH, DOOR, LEVER, BUTTON, LAMP, RIMESTONE, FROSTLIGHT, TARSTONE, AMBER, ROSEMOSS,
+                   DAWN_LEAVES, STARDUST, WINDSTONE]
                   + [WOOL + i for i in range(16)]
                   + [tool_id(m, k) for m in range(5) for k in range(4)]
                   + [HOE0 + m for m in range(5)] + [ARMOR0 + i for i in range(12)]
                   + [BUCKET, WATER_BUCKET, STICK, COAL, IRON_INGOT, GOLD_INGOT, DIAMOND, REDSTONE, GEM, FLINT,
                      FLINT_STEEL, STRING, FEATHER, SLIME_BALL, WHEAT_SEEDS, WHEAT_ITEM, SUGAR, APPLE, BREAD, PORK,
                      COOKED_PORK, BEEF, STEAK, CHICKEN, COOKED_CHICKEN, FISH, COOKED_FISH, ROTTEN_FLESH,
-                     RAW_RABBIT, COOKED_RABBIT, RABBIT_HIDE, LEATHER])
+                     RAW_RABBIT, COOKED_RABBIT, RABBIT_HIDE, LEATHER, SADDLE])
 
 
 def is_block(item: int) -> bool:
@@ -278,7 +368,7 @@ def is_block(item: int) -> bool:
 
 def max_stack(item: int) -> int:
     if tool_info(item) is not None or hoe_material(item) is not None or armor_info(item) is not None or \
-            item in (FLINT_STEEL, WATER_BUCKET, BED):
+            item in (FLINT_STEEL, WATER_BUCKET, BED, SADDLE):
         return 1
     return 16 if item == BUCKET else 64
 
@@ -296,9 +386,20 @@ def max_damage(item: int) -> int:
     return 64 if item == FLINT_STEEL else 0
 
 
+_BASE = {**{FURNACE + _i: FURNACE for _i in range(8)}, **{CHEST + _i: CHEST for _i in range(4)}, OLD_CHEST: CHEST,
+         LEVER_ON: LEVER, BUTTON_ON: BUTTON, **{_b: REDSTONE for _b in DUST_LEVELS}, LAMP_ON: LAMP,
+         **{_b: DOOR for _b in DOORS}}
+
+
 def base_block(b: int) -> int:
-    """The item a block is (furnace facings -> furnace)."""
-    return FURNACE if FURNACE <= b < FURNACE + 8 else b
+    """The item a block is (furnace and chest facings -> furnace, chest; a lit lamp -> a lamp; laid dust -> dust)."""
+    return _BASE.get(b, b)
+
+
+def max_wear(item: int, damage: int = 0) -> int:
+    """How much wear an item takes before it breaks (twice as much with the Lasting rune); 0: it does not wear."""
+    md = max_damage(item)
+    return md * 2 if md and rune_of(damage) == R_LASTING else md
 
 
 def drops(b: int, tool: int, rng: np.random.Generator) -> list[tuple[int, int]]:
@@ -310,7 +411,11 @@ def drops(b: int, tool: int, rng: np.random.Generator) -> list[tuple[int, int]]:
     if need:
         if info is None or info[1] != 0 or TOOL_TIER[info[0]] < need:
             return []
+    if b in DOORS and (b - DOOR) & 1:
+        return []  # the upper half of a door: the lower one is the door
     b = base_block(b)
+    if b >= 256:
+        return [(b, 1)]  # signal dust laid on the ground
     table = {STONE: COBBLE, GRASS: DIRT, COAL_ORE: COAL, DIAMOND_ORE: DIAMOND, GLOWSTONE: GLOWSTONE,
              BOOKSHELF: OAK_PLANKS, SNOWY_GRASS: DIRT, FARMLAND: DIRT, DRY_GRASS: DIRT, MARSH_GRASS: DIRT}
     if FLUID[b] or b == SEAGRASS:
@@ -323,7 +428,7 @@ def drops(b: int, tool: int, rng: np.random.Generator) -> list[tuple[int, int]]:
         if b == WHEAT + 3:
             return [(WHEAT_ITEM, 1), (WHEAT_SEEDS, int(rng.integers(1, 4)))]
         return [(WHEAT_SEEDS, 1)]
-    if b == PALE_LEAVES:
+    if b in (PALE_LEAVES, DAWN_LEAVES):
         return []
     if b in (GLASS, DEAD_BUSH, ICE):
         return [(STICK, 1)] if b == DEAD_BUSH and rng.random() < 0.5 else []
@@ -1153,10 +1258,127 @@ def _build_biomes() -> None:
     _add("clay_tiles", tiles)
 
 
+def _build_made() -> None:
+    """Chests, the rune bench, the signal blocks and doors, and the newer lands of the Deep and the Sky Isles."""
+    def r(seed: int) -> np.random.Generator:
+        return np.random.default_rng(seed)
+
+    plank = _planks(r(400), "b8945f", "9f844d", "7e6237", "67502c")
+    band, latch = _hex("3c3226"), _hex("d8c060")
+    side = plank.copy()
+    side[0, :] = side[15, :] = side[:, 0] = side[:, 15] = band
+    side[4, :] = _hex("5a4a34")
+    top = plank.copy()
+    top[0, :] = top[15, :] = top[:, 0] = top[:, 15] = band
+    top[:, 7:9] *= 0.86
+    front = side.copy()
+    front[3:7, 7:9] = latch
+    front[5:7, 7:9] = _hex("a08a3a")
+    _add("chest_top", top)
+    _add("chest_side", side)
+    _add("chest_front", front)
+    slab = _stone(r(401)) * np.array([0.62, 0.6, 0.78], np.float32)
+    bt = slab.copy()
+    bt[1:15, 1:15] = _pick(r(402), ["2c2a4a", "343258", "262440"], shape=(14, 14))
+    for y, x in ((4, 4), (4, 11), (11, 4), (11, 11), (7, 7), (8, 8), (7, 8), (8, 7)):
+        bt[y, x] = (150, 236, 220)
+    bt[3:13, 7:9][::3] = (110, 200, 196)
+    _add("rune_bench_top", bt)
+    bs = slab.copy()
+    bs[0:3, :] = _pick(r(403), ["2c2a4a", "343258", "262440"], shape=(3, 16))
+    for x, rows in ((3, (6, 7, 8, 9, 10)), (4, (6, 8)), (5, (7,)), (9, (6, 7, 8, 9, 10)), (10, (10,)), (11, (9, 8)),
+                    (12, (6, 7))):
+        for y in rows:
+            bs[y, x] = (126, 214, 204)
+    _add("rune_bench_side", bs)
+    cob = _cobble(r(404))
+    for name, lean, tip in (("lever", -1, "5a4a34"), ("lever_on", 1, "ff4a3a")):
+        img = np.zeros((16, 16, 4), np.uint8)
+        img[12:16, 4:12, :3] = np.clip(cob[12:16, 4:12], 0, 255)
+        img[12:16, 4:12, 3] = 255
+        for k in range(9):  # the handle, leaning away from the side that is on
+            x = 8 + lean * (k // 2)
+            img[11 - k, x - 1:x + 1, :3] = _hex("8a6a3a") if k < 7 else _hex(tip)
+            img[11 - k, x - 1:x + 1, 3] = 255
+        _add(name, img)
+    for name, col, dot in (("button", "9a9a9a", None), ("button_on", "8a8a8a", "ff5a48")):
+        img = np.zeros((16, 16, 4), np.uint8)
+        img[4:12, 4:12, :3] = _pick(r(405), [col, "a6a6a6", "8e8e8e"], shape=(8, 8))
+        img[4:12, 4:12, 3] = 255
+        img[4, 4:12, :3] = img[4:12, 4, :3] = _hex("c4c4c4")
+        img[11, 4:12, :3] = img[4:12, 11, :3] = _hex("5c5c5c")
+        if dot:
+            img[7:9, 7:9, :3] = _hex(dot)
+        _add(name, img)
+    for name, cols in (("dust", ["5a1410", "6a1a14", "4a100c"]), ("dust_on", ["ff3a2a", "ff6a4a", "e02418"])):
+        img = np.zeros((16, 16, 4), np.uint8)
+        line = _pick(r(406), cols, shape=(16, 16))
+        mask = np.zeros((16, 16), bool)
+        mask[7:9, :] = mask[:, 7:9] = True
+        mask[6:10, 6:10] = True
+        mask &= r(407).random((16, 16)) < 0.9
+        img[mask, :3] = line[mask]
+        img[mask, 3] = 255
+        _add(name, img)
+    for name, glass, core in (("lamp", ["5a4a3a", "66533f", "4e4032"], "7a6a52"),
+                              ("lamp_on", ["ffd27a", "ffe29a", "ffc45a"], "fff6d0")):
+        img = _pick(r(408), glass)
+        img[0, :] = img[15, :] = img[:, 0] = img[:, 15] = _hex("3a2c20")
+        img[7:9, :] = img[:, 7:9] = _hex("3a2c20")
+        img[3:5, 3:5] = img[3:5, 11:13] = img[11:13, 3:5] = img[11:13, 11:13] = _hex(core)
+        _add(name, img)
+    door = _planks(r(409), "a8844f", "8f743d", "6e5227", "57401c")
+    door[:, 0] = door[:, 15] = _hex("4a3a22")
+    lower = door.copy()
+    lower[15, :] = _hex("4a3a22")
+    lower[3:13, 3:13] = np.clip(lower[3:13, 3:13] * 0.86, 0, 255)
+    lower[2:4, 12:14] = _hex("d8c060")  # the handle
+    upper = _rgba(door.copy())
+    upper[0, :, :3] = _hex("4a3a22")
+    for y0, x0 in ((3, 3), (3, 9), (8, 3), (8, 9)):  # four little panes to look through
+        upper[y0:y0 + 4, x0:x0 + 4, 3] = 0
+    _add("door_bottom", lower)
+    _add("door_top", upper)
+    # the Deep: a hollow of cold in the fire, and flats of tar with amber in them
+    rime = _stone(r(410)) * np.array([0.72, 0.9, 1.08], np.float32) + 24
+    rime[r(411).random((16, 16)) < 0.07] = (226, 244, 255)
+    _add("rimestone", rime)
+    frost = _pick(r(412), ["aef0ff", "d6fbff", "8ad8f4", "ffffff"], [4, 3, 2, 1])
+    frost[0, :] = frost[15, :] = frost[:, 0] = frost[:, 15] = _hex("5aa8d8")
+    _add("frostlight", frost)
+    tar = _pick(r(413), ["24212a", "2c2933", "1c1a22", "36323f"], [4, 3, 3, 1])
+    tar[r(414).random((16, 16)) < 0.06] = (96, 90, 120)
+    tar[5::6, :] = np.clip(tar[5::6, :] * 0.7, 0, 255)
+    _add("tarstone", tar)
+    amber = _pick(r(415), ["e89a1e", "f4b436", "d07c10", "ffd060"], [4, 3, 2, 1])
+    for k in range(3):
+        y, x = r(416 + k).integers(1, 10, 2)
+        for i in range(5):
+            amber[y + i, x + i] = (255, 232, 150)
+    _add("amber", amber)
+    # the Sky Isles: groves the colour of dawn, and barrens of star dust
+    rose = _pick(r(420), ["e88aa8", "f09cb6", "d87898", "f6b4c8"], [4, 3, 3, 1])
+    _add("rosemoss", rose)
+    rs = np.clip(_stone(r(224)) * np.array([0.92, 1.0, 1.12], np.float32) + 34, 0, 255)
+    rng = r(421)
+    for x in range(16):
+        d = 3 + (rng.random() < 0.5) + (rng.random() < 0.2)
+        rs[:d, x] = rose[:d, x]
+    _add("rosemoss_side", rs)
+    _add("dawn_leaves", _leaves(r(422), ["ffb07a", "ffc890", "f48a6a", "ffe0a8"]))
+    dust = _pick(r(423), ["e6e2f4", "f2effa", "d8d3ea", "ffffff"], [4, 3, 3, 1])
+    dust[r(424).random((16, 16)) < 0.06] = (255, 226, 130)
+    _add("stardust", dust)
+    wind = _stone(r(425)) * np.array([0.9, 0.98, 1.06], np.float32) + 52
+    wind[3::5, :] = np.clip(wind[3::5, :] * 0.86, 0, 255)
+    _add("windstone", wind)
+
+
 _build_textures()
 _build_more()
 _build_realms()
 _build_biomes()
+_build_made()
 
 # --- the texture pack ------------------------------------------------------------------------------------------------
 log = logging.getLogger(__name__)
@@ -1169,7 +1391,7 @@ _CUTOUT_TEX = {"oak_leaves", "birch_leaves", "spruce_leaves", "glass", "torch", 
                "dead_bush", "fern", "sugar_cane", "seagrass", "kelp", "wheat0", "wheat1", "wheat2", "wheat3",
                "oak_sapling", "cornflower", "allium", "daisy", "red_mushroom", "brown_mushroom",
                "acacia_leaves", "mangrove_leaves", "lily_pad", "vine", "sunflower", "sunflower_top", "dry_tuft",
-               "lantern_vine", "sulfur_crystal", "stalactite", "stalagmite", "wisp_bloom"}
+               "lantern_vine", "sulfur_crystal", "stalactite", "stalagmite", "wisp_bloom", "door_top"}
 _FILLED_TEX = {"kapok_leaves", "blackwood_leaves"}  # leaves drawn without holes: the gaps show the dark inside
 # our texture -> the pack's block picture (most have the same name)
 _PACK_BLOCKS = {n: n for n in (
@@ -1198,6 +1420,10 @@ _PACK_BLOCKS.update({
     "kapok_planks": "jungle_planks", "blackwood_log": "dark_oak_log", "blackwood_log_top": "dark_oak_log_top",
     "blackwood_leaves": "dark_oak_leaves", "blackwood_planks": "dark_oak_planks", "sunflower": "sunflower_bottom",
     "dry_tuft": "short_grass", "lantern_vine": "cave_vines_lit", "sulfur_crystal": "sulfur_spire_small"})
+_PACK_BLOCKS.update({  # (the pack has no chest among its block pictures: its barrel is the nearest box of planks)
+    "chest_side": "barrel_side", "chest_top": "barrel_top", "rune_bench_side": "lodestone_side",
+    "rune_bench_top": "lodestone_top", "lamp": "redstone_lamp", "lamp_on": "redstone_lamp_on",
+    "door_bottom": "oak_door_bottom", "door_top": "oak_door_top"})
 _PACK_BLOCKS.update({f"wool{i}": f"{c}_wool" for i, c in enumerate(
     ("white", "orange", "magenta", "light_blue", "yellow", "lime", "pink", "gray", "light_gray", "cyan", "purple",
      "blue", "brown", "green", "red", "black"))})
@@ -1209,7 +1435,7 @@ _PACK_ITEM_FILES = {STICK: "stick", COAL: "coal", IRON_INGOT: "iron_ingot", GOLD
                     WATER_BUCKET: "water_bucket", FISH: "cod", COOKED_FISH: "cooked_cod", FEATHER: "feather",
                     CHICKEN: "chicken", COOKED_CHICKEN: "cooked_chicken", STRING: "string",
                     SLIME_BALL: "slime_ball", GEM: "emerald", RAW_RABBIT: "rabbit", COOKED_RABBIT: "cooked_rabbit",
-                    RABBIT_HIDE: "rabbit_hide", LEATHER: "leather"}
+                    RABBIT_HIDE: "rabbit_hide", LEATHER: "leather", SADDLE: "saddle"}
 for _m, _mn in enumerate(MATERIALS):
     for _k, _kn in enumerate(TOOL_KINDS):
         _PACK_ITEM_FILES[tool_id(_m, _k)] = f"{_mn}_{_kn}"
@@ -1310,6 +1536,11 @@ def _apply_pack() -> None:
                 side[..., :3] = np.where(a, tinted(over, tint)[..., :3], side[..., :3])
             side[..., 3] = 255
             _TEX[ours] = side
+    if tile("block", "barrel_side") is not None:  # the chest's front: the pack's planks, with a latch
+        front = _TEX["chest_side"].copy()
+        front[5:9, 7:9, :3] = (216, 192, 96)
+        front[7:9, 7:9, :3] = (150, 130, 58)
+        _TEX["chest_front"] = front
     stem, face = tile("block", "sunflower_top"), tile("block", "sunflower_front")
     if stem is not None and face is not None:  # the head on its stem, as one plant picture
         head = stem.copy()
@@ -1400,6 +1631,21 @@ for _b, _n in ((PACKED_ICE, "packed_ice"), (RED_SAND, "red_sand"), (MUD, "mud"),
     _faces(_b, _n)
 for _b, (_n, _c) in zip(TERRACOTTAS, TERRACOTTA_COLOURS, strict=True):
     _faces(_b, _n)
+for _b, _n in ((LEVER, "lever"), (LEVER_ON, "lever_on"), (BUTTON, "button"), (BUTTON_ON, "button_on"),
+               (DUST, "dust"), (DUST_ON, "dust_on"), (LAMP, "lamp"), (LAMP_ON, "lamp_on"), (RIMESTONE, "rimestone"),
+               (FROSTLIGHT, "frostlight"), (TARSTONE, "tarstone"), (AMBER, "amber"), (DAWN_LEAVES, "dawn_leaves"),
+               (STARDUST, "stardust"), (WINDSTONE, "windstone")):
+    _faces(_b, _n)
+_faces(ROSEMOSS, "rosemoss_side", "rosemoss", "voidstone")
+_faces(RUNE_BENCH, "rune_bench_side", "rune_bench_top", "deepstone")
+_faces(OLD_CHEST, "chest_front", "chest_top")
+for _i, _face in enumerate((5, 0, 4, 1)):  # the chest's latch faces north / east / south / west
+    _faces(CHEST + _i, "chest_side", "chest_top")
+    FACE_TEX[CHEST + _i, _face] = TEX_INDEX["chest_front"]
+for _b in DOORS:
+    _faces(_b, "door_top" if (_b - DOOR) & 1 else "door_bottom")
+for _b in DUST_LEVELS[2:]:
+    _faces(_b, "dust_on")
 _faces(RED_SANDSTONE, "red_sandstone", "red_sandstone_top")
 _faces(DRY_GRASS, "dry_grass_side", "dry_grass_top", "dirt")
 _faces(MARSH_GRASS, "marsh_grass_side", "marsh_grass_top", "dirt")
@@ -1598,6 +1844,8 @@ def _item_sprite(item: int) -> np.ndarray:
                                  "w": ("ffffff", "ffffff")}),
         FLINT: (["...ff.....", "..ffff....", ".ffffff...", ".fffffff..", "..ffffff..", "...ffff..."],
                 {"f": ("4a4a4a", "1e1e1e")}),
+        SADDLE: ([".bbbbbbb..", "bbbbbbbbb.", "bbdbbbdbb.", ".b.....b..", ".s.....s..", ".s.....s..", ".ss...ss.."],
+                 {"b": ("a8643a", "6a3a1a"), "d": ("d8c060", "a08a3a"), "s": ("c8c8c8", "6a6a6a")}),
         FLINT_STEEL: (["......ss..", ".....s..s.", "....s....s", "...s.....s", ".ff.......", "ffff......",
                        ".ff......."], {"s": ("c8c8c8", "6a6a6a"), "f": ("4a4a4a", "1e1e1e")}),
         ROTTEN_FLESH: (["..rrr.....", ".rgrrr....", ".rrrgrr...", "..rrrrrr..", "...rrgrr..", "....rrr..."],

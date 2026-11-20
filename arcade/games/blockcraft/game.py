@@ -1,5 +1,9 @@
 """BlockCraft: a first-person voxel sandbox for the Break Room Arcade. Worlds (survival or creative) are endless,
-generated from a seed around the player and saved as a compact diff; the graphics card draws them (render.py)."""
+generated from a seed around the player and saved as a compact diff; the graphics card draws them (render.py).
+
+The game widget is put together from mixins: screens.py (menus, the HUD, the container screens), book.py (recipes,
+advancements), life.py (growth, farming, beds, hamlets, the other realms), extras.py (chests, breeding, riding,
+weather, the rune bench, signals) and play.py (the world session and its tick)."""
 
 from __future__ import annotations
 
@@ -18,6 +22,7 @@ from app.arcade.games.blockcraft import items as I
 from app.arcade.games.blockcraft import sounds
 from app.arcade.games.blockcraft.chunkpool import ChunkPool
 from app.arcade.games.blockcraft.book import BookMixin
+from app.arcade.games.blockcraft.extras import ExtrasMixin
 from app.arcade.games.blockcraft.life import LifeMixin
 from app.arcade.games.blockcraft.play import PlayMixin
 from app.arcade.games.blockcraft.render import Env, Renderer, layers
@@ -30,11 +35,12 @@ DEFAULT_OPTS = {"fov": 70, "chunks": 10, "fancy": True, "smooth": True, "res": "
                 "bob": True, "music": True, "gui": 0, "gamma": 0.5, "particles": True}
 RES_MODES = ("auto", "full", "half")
 SAVE_FORMAT = 2  # 1: the first BlockCraft's walled worlds (their terrain is made anew)
+CONTAINERS = ("inventory", "crafting", "furnace", "chest", "runes")  # overlays with slots to click
 _thumb_cache: dict = {}
 log = logging.getLogger(__name__)
 
 
-class BlockCraftGame(ScreensMixin, BookMixin, LifeMixin, PlayMixin, ArcadeGame):
+class BlockCraftGame(ScreensMixin, BookMixin, LifeMixin, ExtrasMixin, PlayMixin, ArcadeGame):
     """The game widget: menus, a world being played, and its saved worlds."""
 
     game_id = "blockcraft"
@@ -44,7 +50,7 @@ class BlockCraftGame(ScreensMixin, BookMixin, LifeMixin, PlayMixin, ArcadeGame):
                    "survive the zombies of the night - or fly free in creative mode.")
     controls = (("WASD", "Walk"), ("Space", "Jump (double: fly)"), ("Shift", "Sneak / fly down"),
                 ("Ctrl / WW", "Sprint"), ("Mouse", "Look"), ("Left click", "Break / attack"),
-                ("Right click", "Place / use / eat / trade"), ("Middle click", "Pick block"),
+                ("Right click", "Place / use / eat / trade / feed / ride"), ("Middle click", "Pick block"),
                 ("1-9 / wheel", "Hotbar"),
                 ("E", "Inventory"), ("R / L", "Recipes / goals"), ("Q", "Drop item"), ("F3 / F1", "Debug / hide HUD"), ("Esc", "Game menu"))
     accent = "#6aa83c"
@@ -125,7 +131,7 @@ class BlockCraftGame(ScreensMixin, BookMixin, LifeMixin, PlayMixin, ArcadeGame):
 
     def handle_escape(self) -> bool:
         if self.screen == "game":
-            if self.overlay in ("inventory", "crafting", "furnace", "recipes", "advancements"):
+            if self.overlay in CONTAINERS or self.overlay in ("recipes", "advancements"):
                 self.close_container()
             elif self.overlay == "options":
                 self.overlay = "menu"
@@ -276,12 +282,13 @@ class BlockCraftGame(ScreensMixin, BookMixin, LifeMixin, PlayMixin, ArcadeGame):
         self.sfx.play("door" if name != "inventory" else "click", 0.4)
 
     def close_container(self) -> None:
-        for s in self.grid + [self.cursor]:
+        for s in self.grid + [self.cursor] + self.rune_slots:
             if s is not None:
                 left = self.inv.add(*s)
                 if left and self.player is not None:
                     self._spawn_drop(self.player.x, self.player.y + 1.2, self.player.z, [s[0], left, s[2]])
         self.grid = [None] * 9
+        self.rune_slots = [None, None]
         self.cursor = None
         self.overlay = None
         self.capture_if_playing()
@@ -320,7 +327,7 @@ class BlockCraftGame(ScreensMixin, BookMixin, LifeMixin, PlayMixin, ArcadeGame):
             n = key - Qt.Key.Key_1
             if self.overlay is not None:
                 ref = self.slot_at(*self.mouse_gui)
-                if ref is not None and ref[0] in ("inv", "grid", "fur") and ref != ("inv", n):
+                if ref is not None and ref[0] in ("inv", "grid", "fur", "che") and ref != ("inv", n):
                     a, b = self.get_slot(ref), self.inv.slots[n]
                     if ref == ("fur", 2) and b is not None:
                         return
@@ -402,7 +409,7 @@ class BlockCraftGame(ScreensMixin, BookMixin, LifeMixin, PlayMixin, ArcadeGame):
         if self.screen == "game" and self.overlay in ("recipes", "advancements"):
             self.book_click(bit, *self.mouse_gui)
             return
-        if self.screen == "game" and self.overlay in ("inventory", "crafting", "furnace"):
+        if self.screen == "game" and self.overlay in CONTAINERS:
             self.container_click(bit, pos)
             return
         if bit != 1:
@@ -591,6 +598,11 @@ class BlockCraftGame(ScreensMixin, BookMixin, LifeMixin, PlayMixin, ArcadeGame):
         if kind == "fur":
             f = self.furnaces.get(self.furnace_pos)
             return f.slots[ref[1]] if f is not None else None
+        if kind == "che":
+            slots = self.chest_slots(self.chest_pos)
+            return slots[ref[1]] if slots is not None else None
+        if kind == "run":
+            return self.rune_slots[ref[1]]
         if kind == "pal":
             item = B.CREATIVE_ITEMS[ref[1]]
             return I.stack(item, 1)
@@ -610,11 +622,22 @@ class BlockCraftGame(ScreensMixin, BookMixin, LifeMixin, PlayMixin, ArcadeGame):
             f = self.furnaces.get(self.furnace_pos)
             if f is not None:
                 f.slots[ref[1]] = s
+        elif kind == "che":
+            slots = self.chest_slots(self.chest_pos)
+            if slots is not None:
+                slots[ref[1]] = s
+        elif kind == "run":
+            self.rune_slots[ref[1]] = s
 
     def container_click(self, bit: int, pos: QPointF) -> None:
         gx, gy = self.mouse_gui
         ref = self.slot_at(gx, gy)
         shift = Qt.Key.Key_Shift in self.keys
+        if ref is None and self.overlay == "runes" and bit == 1:
+            row = self.rune_row_at(gx, gy)
+            if row is not None:
+                self.apply_rune(row)
+                return
         if ref is None:
             ox, oy = self.panel_origin()
             pw, ph = self.panel_size()
@@ -660,6 +683,8 @@ class BlockCraftGame(ScreensMixin, BookMixin, LifeMixin, PlayMixin, ArcadeGame):
             self._shift_move(ref, s)
             return
         cur = self.cursor
+        if kind == "run" and cur is not None and not self.rune_slot_takes(ref[1], cur[0]):
+            return  # the bench takes a tool, a weapon or armour, and gems
         if kind == "arm":  # an armour slot takes only its own piece
             info = B.armor_info(cur[0]) if cur else None
             if cur is None or (info is not None and info[1] == ref[1]):
@@ -743,7 +768,7 @@ class BlockCraftGame(ScreensMixin, BookMixin, LifeMixin, PlayMixin, ArcadeGame):
         self.sfx.play("click", 0.5)
 
     def _shift_move(self, ref: tuple, s: list) -> None:
-        if ref[0] in ("grid", "fur", "arm"):
+        if ref[0] in ("grid", "fur", "arm", "che", "run"):
             left = self.inv.add(*s)
             self.set_slot(ref, None if left <= 0 else [s[0], left, s[2]])
             return
@@ -771,6 +796,37 @@ class BlockCraftGame(ScreensMixin, BookMixin, LifeMixin, PlayMixin, ArcadeGame):
                         if s[1] <= 0:
                             self.inv.slots[i] = None
                         return
+        if self.overlay == "runes":  # onto the bench: the thing to mark, or the gems
+            k = 1 if s[0] == B.GEM else 0
+            dst = self.rune_slots[k]
+            if self.rune_slot_takes(k, s[0]):
+                if dst is None:
+                    self.rune_slots[k] = s
+                    self.inv.slots[i] = None
+                elif I.same_kind(dst, s) and dst[1] < B.max_stack(s[0]):
+                    n = min(B.max_stack(s[0]) - dst[1], s[1])
+                    dst[1] += n
+                    s[1] -= n
+                    if s[1] <= 0:
+                        self.inv.slots[i] = None
+            return
+        if self.overlay == "chest":  # into the chest: onto stacks of its kind first, then the first free slot
+            slots = self.chest_slots(self.chest_pos)
+            if slots is not None:
+                for d in slots:
+                    if d is not None and I.same_kind(d, s) and d[1] < B.max_stack(s[0]):
+                        n = min(B.max_stack(s[0]) - d[1], s[1])
+                        d[1] += n
+                        s[1] -= n
+                        if s[1] <= 0:
+                            self.inv.slots[i] = None
+                            return
+                for j, d in enumerate(slots):
+                    if d is None:
+                        slots[j] = s
+                        self.inv.slots[i] = None
+                        return
+            return
         rng = range(9, 36) if i < 9 else range(0, 9)
         if self.creative and self.overlay == "inventory":
             self.inv.slots[i] = None

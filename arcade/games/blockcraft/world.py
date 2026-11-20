@@ -306,6 +306,18 @@ class World:
         self._idle = False
         return True
 
+    def set_alike(self, changes: list[tuple[int, int, int, int]]) -> None:
+        """Change blocks into ones that look and light exactly like what they replace (the strength of the signal
+        in a piece of live dust): kept and saved like any change, but no light and no mesh is made anew."""
+        for x, y, z, b in changes:
+            key = (x >> 4, z >> 4)
+            c = self.chunks.get(key)
+            if c is None or not 0 <= y < HEIGHT:
+                continue
+            i = ((x & 15) << 11) | ((z & 15) << 7) | y
+            c.raw[i] = b
+            self.edits.setdefault(key, {})[i] = int(b)
+
     def _relight(self, done: list[tuple[int, int, int]]) -> None:
         """New light around changed blocks, and new meshes for the chunks they are in (and touch)."""
         xs, _ys, zs = zip(*done, strict=True)

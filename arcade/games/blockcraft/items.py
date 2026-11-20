@@ -39,7 +39,7 @@ class Inventory:
         for k, s in enumerate(self.armor):
             if s is not None:
                 s[2] += 1
-                if s[2] >= B.max_damage(s[0]):
+                if B.wear_of(s[2]) >= B.max_wear(s[0], s[2]):
                     self.armor[k] = None
 
     def armor_json(self) -> list:
@@ -96,11 +96,11 @@ class Inventory:
     def damage_held(self, amount: int = 1) -> bool:
         """Wear the held tool; True when it broke."""
         s = self.held
-        md = B.max_damage(s[0]) if s else 0
+        md = B.max_wear(s[0], s[2]) if s else 0
         if not md:
             return False
         s[2] += amount
-        if s[2] >= md:
+        if B.wear_of(s[2]) >= md:
             self.slots[self.selected] = None
             return True
         return False
@@ -158,6 +158,13 @@ SHAPED: list[tuple[tuple[str, ...], dict, tuple[int, int]]] = [
     (("DD", "DD"), {"D": frozenset({B.STALACTITE, B.STALAGMITE})}, (B.DRIPSTONE, 1)),
     (("HH", "HH"), {"H": B.RABBIT_HIDE}, (B.LEATHER, 1)),
     (("SAS", "ACA", "SAS"), {"S": B.SULFUR, "A": frozenset({B.SAND, B.RED_SAND}), "C": B.COAL}, (B.TNT, 1)),
+    (("PPP", "P P", "PPP"), {"P": PLANKS}, (B.CHEST, 1)),
+    (("PP", "PS", "PP"), {"P": PLANKS, "S": B.STICK}, (B.DOOR, 1)),
+    (("LLL", "LSL", "I I"), {"L": B.LEATHER, "S": B.STRING, "I": B.IRON_INGOT}, (B.SADDLE, 1)),
+    (("IGI", "SSS", "SSS"), {"I": B.GOLD_INGOT, "G": B.GEM, "S": B.STONE_BRICKS}, (B.RUNE_BENCH, 1)),
+    (("S", "D", "C"), {"S": B.STICK, "D": B.REDSTONE, "C": B.COBBLE}, (B.LEVER, 1)),
+    (("D", "S"), {"D": B.REDSTONE, "S": B.STONE}, (B.BUTTON, 2)),
+    (("GGG", "GDG", "GTG"), {"G": B.GLASS, "D": B.REDSTONE, "T": B.TORCH}, (B.LAMP, 2)),
 ]
 _ARMOR_SHAPES = (("MMM", "M M"), ("M M", "MMM", "MMM"), ("MMM", "M M", "M M"), ("M M", "M M"))
 for _m, _mat in enumerate((B.IRON_INGOT, B.GOLD_INGOT, B.DIAMOND)):
@@ -237,7 +244,7 @@ def fuel_time(item: int) -> float:
         return 10.0
     return {B.COAL: 80.0, B.OAK_PLANKS: 15.0, B.BIRCH_PLANKS: 15.0, B.SPRUCE_PLANKS: 15.0, B.OAK_LOG: 15.0,
             B.BIRCH_LOG: 15.0, B.SPRUCE_LOG: 15.0, B.STICK: 5.0, B.CRAFTING_TABLE: 15.0,
-            B.BOOKSHELF: 15.0, **{b: 15.0 for pair in NEW_WOODS for b in pair}}.get(item, 0.0)
+            B.BOOKSHELF: 15.0, B.CHEST: 15.0, B.DOOR: 10.0, **{b: 15.0 for pair in NEW_WOODS for b in pair}}.get(item, 0.0)
 
 
 class Furnace:

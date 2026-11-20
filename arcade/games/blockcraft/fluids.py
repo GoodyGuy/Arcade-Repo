@@ -16,6 +16,7 @@ from app.arcade.games.blockcraft import blocks as B
 SOFT = B.KIND == B.K_CROSS  # what water runs into and washes away: air and every plant on land
 SOFT[B.AIR] = True
 SOFT[[B.SEAGRASS, B.KELP]] = False
+SOFT[list(B.DOORS)] = False  # (a door, open or shut, holds water back)
 _AROUND = ((1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1), (0, 0, 0))
 _SIDES = ((1, 0), (-1, 0), (0, 1), (0, -1))
 _LEVEL = [int(v) for v in B.LEVEL]
