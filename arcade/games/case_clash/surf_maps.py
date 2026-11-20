@@ -477,6 +477,11 @@ _MAPS: dict[str, SurfMap] = {}
 _BUILDERS = {"dune": _dune_drift, "glacier": _glacier_run, "neon": _neon_spiral}
 
 
+def is_built(map_id: str) -> bool:
+    """True once ``get_map`` has built the map (later calls cost nothing)."""
+    return map_id in _MAPS
+
+
 def get_map(map_id: str) -> SurfMap:
     """The map (built the first time it is asked for)."""
     m = _MAPS.get(map_id)

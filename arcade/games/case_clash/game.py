@@ -140,6 +140,8 @@ class CaseClashGame(ArcadeGame):
         self.arena: Arena | None = None
         self.surf: SurfRun | None = None
         self._surf_renderer: SurfRenderer | None = None
+        self._surf_warm = 0  # Surf tab set-up slices done (part of the screen signature)
+        self._surf_shown = False  # the Surf tab was painted once (set-up waits for that, so the tab shows first)
         for _ in range(8):
             self._market_sale(backdate=True)
 
@@ -764,6 +766,8 @@ class CaseClashGame(ArcadeGame):
         if self.surf is not None:
             self.surf.tick(dt)
             return
+        if self.screen == "surf" and self._surf_shown and not self.surf_warm():
+            self.surf_warm_step()
         if self.modal == "reel" and self.reel is not None:
             r = self.reel
             r.t += dt
@@ -1058,7 +1062,7 @@ class CaseClashGame(ArcadeGame):
                 tuple(self.contract), len(self.selected), hash(frozenset(self.selected)), self.inv_filter,
                 self.inv_sort, self.select_mode, self.settings["quick"], tuple(sorted(self.scroll.items())),
                 self.day(), live, self.devicePixelRatioF(),
-                json.dumps(self.surf_data, sort_keys=True) if self.screen == "surf" else None)
+                (json.dumps(self.surf_data, sort_keys=True), self._surf_warm) if self.screen == "surf" else None)
 
     def paint_screen(self, p: QPainter, w: int, h: int, s: float) -> None:
         p.drawPixmap(0, 0, U.background(w, h, self._bg_cache))
@@ -1691,8 +1695,28 @@ class CaseClashGame(ArcadeGame):
     def toggle_quick(self) -> None:
         self.settings["quick"] = not self.settings["quick"]
 
+    def surf_warm_step(self) -> None:
+        """One slice of the Surf tab's set-up per frame (graphics context, then one map each), so the tab shows at
+        once with plain card pictures instead of the window stalling for over half a second."""
+        r = self.surf_renderer()
+        if r.ctx is None and not r.error:
+            r.available()
+        else:
+            mid = next((m for m in SM.MAP_ORDER if not SM.is_built(m)), None)
+            if mid is None:
+                return
+            SM.get_map(mid)
+        self._surf_warm += 1
+
+    def surf_warm(self) -> bool:
+        r = self._surf_renderer
+        return r is not None and (bool(r.error) or (r.ctx is not None and all(map(SM.is_built, SM.MAP_ORDER))))
+
     def surf_card_picture(self, map_id: str, w: int, h: int) -> QPixmap:
         dpr = self.devicePixelRatioF()
+        if not self.surf_warm():
+            return self.cached(("surf_ph", map_id, w, h, dpr),
+                               lambda: surf_placeholder(w, h, SM.INFO[map_id]["theme_id"]))
 
         def make() -> QPixmap:
             pm = surf_preview(self.surf_renderer(), map_id, w, h, dpr)
@@ -1714,7 +1738,8 @@ class CaseClashGame(ArcadeGame):
         n = len(SM.MAP_ORDER)
         cw = (area.width() - gap * (n - 1)) / n
         sd = self.surf_data
-        gl_ok = self.surf_renderer().available()
+        gl_ok = not self.surf_renderer().error
+        self._surf_shown = True
         for k, mid in enumerate(SM.MAP_ORDER):
             info = SM.INFO[mid]
             r = QRectF(area.left() + k * (cw + gap), area.top(), cw, area.height())
