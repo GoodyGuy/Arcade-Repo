@@ -47,6 +47,9 @@ for _lv in range(1, 7):
                ((0, 0, 0), (0, 0, 1), (0, _d, 0), (0, 0, 1, _d), 0.6),
                ((0, 0, 1), (1, 0, 0), (0, _d, 0), (0, 0, 1, _d), 0.8),
                ((1, 0, 0), (-1, 0, 0), (0, _d, 0), (0, 0, 1, _d), 0.8)]
+# 50, 51: a leaf lying flat on water, seen from above and from below
+SHAPES += [((0, -0.11, 1), (1, 0, 0), (0, 0, -1), (0, 0, 1, 1), 1.0),
+           ((0, -0.11, 0), (1, 0, 0), (0, 0, 1), (0, 0, 1, 1), 0.6)]
 F_FLIP, F_ANIM, F_WAVE, F_GLOW = 1, 2, 4, 8  # flag bits of a face
 
 DIRS = ((1, 0, 0), (-1, 0, 0), (0, 0, 1), (0, 0, -1), (0, 1, 0), (0, -1, 0))  # (dx, dz, dy) the faces 0..5 look
@@ -69,7 +72,7 @@ LIGHT_OPAQUE[B.BORDER] = True
 CUBE = (B.KIND == B.K_OPAQUE) | (B.KIND == B.K_CUTOUT) | (B.KIND == B.K_WATER)
 CUBE[B.BORDER] = False
 SELF_CULL = np.zeros(256, bool)  # no faces between two of the same block
-SELF_CULL[[B.GLASS, B.ICE]] = True
+SELF_CULL[[B.GLASS, B.ICE, B.PACKED_ICE, *B.DENSE_LEAVES]] = True
 _OCC16 = (OPAQUE.astype(np.uint16) << 8)
 _OCC16[B.BORDER] = 0
 _FLAGS = np.zeros(256, np.uint8)
@@ -80,6 +83,14 @@ _FLAGS[[B.LAVA, B.GLOWSTONE]] |= F_GLOW
 _COST = (B.LIGHT_ATT.astype(np.int16) + 1)
 _PLANT_SHAPES = np.array([6, 7, 8, 9], np.uint8)
 _TORCH_SHAPES = np.array([10, 11, 12, 13, 14], np.uint8)
+_FLAT_SHAPES = np.array([50, 51], np.uint8)
+_PLANT_FLAGS = np.full(256, F_WAVE, np.uint8)  # plants sway, but for the stiff ones; some glow
+_PLANT_FLAGS[list(B.STIFF)] = 0
+_PLANT_FLAGS[list(B.GLOW_PLANTS)] |= F_GLOW
+_PLANT_FLAGS[B.TORCH] = F_GLOW
+_PLANT_GROUP = np.zeros(256, np.uint8)  # 0 crossed planes, 1 a torch, 2 flat
+_PLANT_GROUP[B.TORCH] = 1
+_PLANT_GROUP[list(B.FLAT)] = 2
 
 
 # --- light -----------------------------------------------------------------------------------------------------------
@@ -271,8 +282,9 @@ def build_mesh(blk: np.ndarray, sky: np.ndarray, bl: np.ndarray, x0: int, z0: in
         ls = ((w & 15) * 17).astype(np.uint8)
         lb = (((w >> 4) & 15) * 17).astype(np.uint8)
         parts = [solid]
-        for is_torch, shapes in ((False, _PLANT_SHAPES), (True, _TORCH_SHAPES)):
-            sel = (pb == B.TORCH) == is_torch
+        group = _PLANT_GROUP[pb]
+        for g, shapes in enumerate((_PLANT_SHAPES, _TORCH_SHAPES, _FLAT_SHAPES)):
+            sel = group == g
             k = int(sel.sum())
             if not k:
                 continue
@@ -281,7 +293,7 @@ def build_mesh(blk: np.ndarray, sky: np.ndarray, bl: np.ndarray, x0: int, z0: in
             rec[:, :, 0], rec[:, :, 1], rec[:, :, 2] = px[sel][:, None], py[sel][:, None], pz[sel][:, None]
             rec[:, :, 3] = shapes[None, :]
             rec[:, :, 4] = B.FACE_TEX[pb[sel], 4][:, None]
-            rec[:, :, 5] = F_GLOW if is_torch else F_WAVE
+            rec[:, :, 5] = _PLANT_FLAGS[pb[sel]][:, None]
             rec[:, :, 6] = 255
             rec[:, :, 8:12] = ls[sel][:, None, None]
             rec[:, :, 12:16] = lb[sel][:, None, None]

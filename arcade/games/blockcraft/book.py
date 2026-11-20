@@ -77,7 +77,20 @@ ADVANCEMENTS = [
     ("skygate", "Skywright", "Craft a Sky Gate from starstone", B.SKY_GATE, (B.SKY_GATE,)),
     ("isles", "Above the Clouds", "Step through a Sky Gate", B.MOONMOSS, ()),
     ("wyrm", "Wyrm Slayer", "Beat the Sky Wyrm on the middle isle", B.DEEP_CRYSTAL, ()),
+    ("meadow", "Sunny Side", "Walk among the sunflowers of a meadow", B.SUNFLOWER_TOP, ()),
+    ("savanna", "Dry Season", "Reach the savanna", B.ACACIA_LOG, ()),
+    ("mesa", "Painted Land", "Stand on the painted mesa", B.ORANGE_TERRACOTTA, ()),
+    ("marsh", "Wet Feet", "Wade into a marsh", B.LILY_PAD, ()),
+    ("rainforest", "Under the Canopy", "Enter a rainforest", B.KAPOK_LOG, ()),
+    ("oldgrowth", "Old Giants", "Enter an old-growth forest", B.BLACKWOOD_LOG, ()),
+    ("spires", "Frozen Needles", "Find a field of ice spires", B.PACKED_ICE, ()),
+    ("caver", "Colours Below", "Stand in a dripstone, moss or sulfur cave", B.STALAGMITE, ()),
+    ("gloom", "Into the Gloom", "Reach a gloom cave, far below", B.WISP_BLOOM, ()),
 ]
+# the advancement for setting foot in a biome
+BIOME_ADV = {"sunflower_meadow": "meadow", "savanna": "savanna", "savanna_plateau": "savanna",
+             "savanna_crags": "savanna", "painted_mesa": "mesa", "mesa_woodland": "mesa", "mesa_spires": "mesa",
+             "marsh": "marsh", "rainforest": "rainforest", "old_growth_forest": "oldgrowth", "ice_spires": "spires"}
 _ADV = {a[0]: a for a in ADVANCEMENTS}
 
 
@@ -127,6 +140,16 @@ class BookMixin:
             self.award("armor")
         if "dawn" not in done and self.day_number >= 2 and not self.creative:
             self.award("dawn")
+        w, p = self.world, self.player
+        if self.dim == "over" and w is not None and p is not None:
+            key = BIOME_ADV.get(w.biome_name(p.x, p.z))
+            if key and key not in done and p.y > w.sea - 4:
+                self.award(key)
+            if p.y < 56 and ("caver" not in done or "gloom" not in done) and w.light_at(
+                    math.floor(p.x), math.floor(p.y + 1), math.floor(p.z))[0] < 8:
+                cave = w.gen.cave_biome(p.x, p.y, p.z)  # the kind of the cave around the player
+                if cave:
+                    self.award("gloom" if cave == "gloom_cave" else "caver")
 
     # --- recipes ------------------------------------------------------------------------------------------------
 

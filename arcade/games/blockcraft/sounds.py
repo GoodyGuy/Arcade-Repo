@@ -1,7 +1,7 @@
 """BlockCraft's sounds. The effects are short recordings from free sound packs (the ``sfx`` folder beside this file,
 credited in ``sfx/CREDITS.txt``): several takes of each, played at random with a little spread in pitch and loudness.
-Every sound also has a version synthesised with numpy, which plays when the folder or a file is missing. The calm
-music is synthesised."""
+Every sound also has a version synthesised with numpy, which plays when the folder or a file is missing (as for the
+rabbit, horse, polar bear, camel, frog and wight, which have no recording yet). The calm music is synthesised."""
 
 from __future__ import annotations
 
@@ -34,7 +34,8 @@ VOLUME = {"step": 0.5, "place": 0.75, "dig": 0.9, "splash": 0.8, "splash_out": 0
           "settler": 0.6, "zombie": 0.75, "zombie_hurt": 0.75, "spider": 0.7, "slime": 0.7, "cinder": 0.7,
           "guardian": 0.8, "wyrm": 0.9, "hurt": 0.9, "attack": 0.7, "eat": 0.7, "burp": 0.6, "pop": 0.7, "orb": 0.6,
           "levelup": 0.7, "click": 0.6, "door": 0.7, "break_tool": 0.8, "explode": 1.0, "fuse": 0.7, "fire": 0.6,
-          "bird": 0.5, "crickets": 0.5, "wind": 0.55, "cave": 0.5, "drip": 0.6}
+          "bird": 0.5, "crickets": 0.5, "wind": 0.55, "cave": 0.5, "drip": 0.6, "rabbit": 0.5, "horse": 0.7,
+          "polar_bear": 0.75, "camel": 0.7, "frog": 0.55, "parrot": 0.6, "mummy": 0.75, "wight": 0.7}
 # how far the pitch of a take may sit from the recording (a ratio; 0: always as recorded)
 PITCH = {"step": 0.05, "place": 0.05, "dig": 0.05, "levelup": 0.0, "fuse": 0.0, "cave": 0.0, "wind": 0.03,
          "crickets": 0.0, "shore": 0.03, "bird": 0.03, "click": 0.03, "explode": 0.06}
@@ -43,7 +44,9 @@ LOUDNESS_SPREAD = 0.12  # each play is this much louder or quieter, at random
 HIT_GAIN = 0.65  # the taps of mining are the placing sounds, quieter
 # names the game plays -> the group of recordings (the names keep their own synthesised sound as the fallback)
 ALIASES = {"step_grass1": "step_grass", "step_grass2": "step_grass", "bird0": "bird", "bird1": "bird",
-           "bird2": "bird", "bird3": "bird", "drip0": "drip", "drip1": "drip"}
+           "bird2": "bird", "bird3": "bird", "drip0": "drip", "drip1": "drip",
+           # creatures with no recording of their own borrow the nearest one there is (else: their synthesised voice)
+           "mummy": "zombie", "mummy_hurt": "zombie_hurt", "parrot": "bird"}
 _EMPTY = np.zeros(1)
 
 
@@ -382,6 +385,23 @@ def _voices(sfx) -> None:  # noqa: ANN001
     sfx.add("guardian", envelope(rumble * 0.5, 0.1, 0.35), 0.6)
     roar = _soft(_sweep(74, 40, 1.3, "saw", 0.04, 7), 22) + _soft(noise(1.3, 0.7, 1.5, seed=128), 40) * 1.6
     sfx.add("wyrm", envelope(np.clip(roar * 0.5, -1, 1), 0.08, 0.5), 0.7)
+    # the animals and the dead of the newer biomes
+    sfx.add("rabbit", envelope(_sweep(1500, 2100, 0.07, "sine") * 0.3, 0.004, 0.04), 0.35)
+    neigh = _soft(_sweep(980, 380, 0.85, "saw", 0.09, 13), 5) + 0.4 * _soft(_sweep(490, 190, 0.85, "saw", 0.09, 13), 9)
+    sfx.add("horse", envelope(neigh * 0.3, 0.03, 0.3), 0.5)
+    growl = _soft(_sweep(112, 70, 0.95, "saw", 0.05, 9), 10) + _soft(noise(0.95, 0.5, 2, seed=160), 24) * 1.2
+    sfx.add("polar_bear", envelope(np.clip(growl * 0.45, -1, 1), 0.08, 0.35), 0.6)
+    sfx.add("camel", envelope(_soft(_sweep(156, 104, 1.0, "saw", 0.035, 7), 12) * 0.4, 0.1, 0.35), 0.55)
+    t = np.arange(int(0.14 * RATE)) / RATE
+    croak = _soft(_sweep(230, 170, 0.14, "square"), 4) * (0.55 + 0.45 * np.sin(2 * np.pi * 55 * t))
+    sfx.add("frog", concat(envelope(croak * 0.4, 0.01, 0.04), silence(0.09), envelope(croak * 0.32, 0.01, 0.05)), 0.4)
+    squawk = concat(*[envelope(_soft(_sweep(1900 - 150 * k, 1250, 0.16, "saw", 0.08, 45), 3) * 0.3, 0.008, 0.06)
+                      for k in range(2)])
+    sfx.add("parrot", squawk, 0.4)
+    rasp = _band(noise(1.0, 0.8, 2, seed=161), 2, 12) * 0.7 + _soft(_sweep(84, 62, 1.0, "saw", 0.02, 3.5), 18) * 0.35
+    sfx.add("mummy", envelope(rasp, 0.15, 0.4), 0.55)
+    wail = _sweep(1350, 880, 0.9, "sine", 0.03, 6) * 0.22 + _band(noise(0.9, 0.5, 1, seed=162), 1, 3) * 0.5
+    sfx.add("wight", envelope(wail, 0.12, 0.45), 0.5)
     # water: a deep plunge with bubbles, a lighter splash coming out, soft strokes, bubbles under the surface
     t = np.arange(int(0.9 * RATE)) / RATE
     plunge = _soft(noise(0.9, 1.0, 4, seed=125), 7) * 1.6 + _soft(noise(0.9, 1.0, 9, seed=126), 28) * 1.4

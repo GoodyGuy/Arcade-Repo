@@ -32,7 +32,7 @@ def _vec(v) -> bool:  # noqa: ANN001
 RANDOM_TICKS = 24  # blocks looked at per chunk and game tick (a block is reached about once a minute)
 GROW_CHUNKS = 2  # chunks around the player where things grow
 GROWING = frozenset({B.GRASS, B.OAK_SAPLING, B.SUGAR_CANE, B.KELP, B.FARMLAND, B.WHEAT, B.WHEAT + 1, B.WHEAT + 2})
-_SOFT_PLANTS = (B.TALL_GRASS, B.FERN, B.DEAD_BUSH)
+_SOFT_PLANTS = (B.TALL_GRASS, B.FERN, B.DEAD_BUSH, B.DRY_TUFT)
 _SIDES = ((1, 0), (-1, 0), (0, 1), (0, -1))
 MAX_FISH = 10
 # what the people of a hamlet trade: (item wanted, how many, item given, how many)
@@ -42,7 +42,8 @@ JOBS = {
     "Smith": [(B.COAL, 12, B.GEM, 1), (B.IRON_INGOT, 4, B.GEM, 1), (B.GEM, 4, B.tool_id(2, 0), 1),
               (B.GEM, 6, B.ARMOR0 + 1, 1), (B.GEM, 3, B.ARMOR0, 1)],
     "Fisher": [(B.FISH, 6, B.GEM, 1), (B.STRING, 6, B.GEM, 1), (B.GEM, 1, B.BUCKET, 1), (B.GEM, 2, B.COOKED_FISH, 6)],
-    "Shepherd": [(B.WOOL, 8, B.GEM, 1), (B.FEATHER, 8, B.GEM, 1), (B.GEM, 2, B.BED, 1), (B.GEM, 1, B.STEAK, 3)],
+    "Shepherd": [(B.WOOL, 8, B.GEM, 1), (B.FEATHER, 8, B.GEM, 1), (B.LEATHER, 5, B.GEM, 1), (B.GEM, 2, B.BED, 1),
+                 (B.GEM, 1, B.STEAK, 3)],
 }
 
 
@@ -201,7 +202,7 @@ class LifeMixin:
             return False
         if B.hoe_material(held[0]) is not None:
             up = w.get(x, y + 1, z)
-            if b in (B.GRASS, B.DIRT) and (up == B.AIR or up in _SOFT_PLANTS):
+            if b in (B.GRASS, B.DIRT, B.DRY_GRASS, B.MARSH_GRASS) and (up == B.AIR or up in _SOFT_PLANTS):
                 changes = [(x, y, z, B.FARMLAND)]
                 if up != B.AIR:
                     changes.append((x, y + 1, z, B.AIR))
@@ -235,13 +236,18 @@ class LifeMixin:
         if block == B.SUGAR_CANE:
             if below == B.SUGAR_CANE:
                 return True
-            return below in (B.GRASS, B.DIRT, B.SAND) and any(B.FLUID[w.get(x + dx, y - 1, z + dz)]
+            return below in (B.GRASS, B.DIRT, B.SAND, B.MARSH_GRASS, B.MUD) and any(B.FLUID[w.get(x + dx, y - 1, z + dz)]
                                                               for dx, dz in _SIDES)
+        if block in B.HANGING:  # from a roof, or from more of itself
+            above = w.get(x, y + 1, z)
+            return bool(B.SOLID[above]) or above == block
+        if block == B.LILY_PAD:
+            return below == B.WATER
         if block == B.DEAD_BUSH:
-            return below in (B.SAND, B.DIRT, B.GRASS)
-        if block in (B.RED_MUSHROOM, B.BROWN_MUSHROOM):
+            return below in (B.SAND, B.DIRT, B.GRASS, B.RED_SAND, B.DRY_GRASS, *B.TERRACOTTAS)
+        if block in (B.RED_MUSHROOM, B.BROWN_MUSHROOM, B.STALAGMITE, B.SULFUR_CRYSTAL, B.WISP_BLOOM):
             return bool(B.SOLID[below])
-        return below in (B.GRASS, B.DIRT, B.SNOWY_GRASS, B.FARMLAND)
+        return below in B.SOILS
 
     def _use_bed(self, x: int, y: int, z: int) -> None:
         p = self.player

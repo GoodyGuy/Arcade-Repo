@@ -120,8 +120,11 @@ class Inventory:
 
 
 # --- crafting ----------------------------------------------------------------------------------------------------
-PLANKS = frozenset({B.OAK_PLANKS, B.BIRCH_PLANKS, B.SPRUCE_PLANKS})
-LOGS = frozenset({B.OAK_LOG, B.BIRCH_LOG, B.SPRUCE_LOG, B.PALE_LOG, B.GLOWSTEM})
+PLANKS = frozenset({B.OAK_PLANKS, B.BIRCH_PLANKS, B.SPRUCE_PLANKS, B.ACACIA_PLANKS, B.KAPOK_PLANKS,
+                    B.BLACKWOOD_PLANKS, B.MANGROVE_PLANKS})
+NEW_WOODS = ((B.ACACIA_LOG, B.ACACIA_PLANKS), (B.KAPOK_LOG, B.KAPOK_PLANKS), (B.BLACKWOOD_LOG, B.BLACKWOOD_PLANKS),
+             (B.MANGROVE_LOG, B.MANGROVE_PLANKS))
+LOGS = frozenset({B.OAK_LOG, B.BIRCH_LOG, B.SPRUCE_LOG, B.PALE_LOG, B.GLOWSTEM, *(log for log, _ in NEW_WOODS)})
 _MATERIALS = (PLANKS, frozenset({B.COBBLE}), frozenset({B.IRON_INGOT}), frozenset({B.GOLD_INGOT}),
               frozenset({B.DIAMOND}))
 _TOOL_SHAPES = (("MMM", " S ", " S "), ("MM", "MS", " S"), ("M", "S", "S"), ("M", "M", "S"))
@@ -148,6 +151,13 @@ SHAPED: list[tuple[tuple[str, ...], dict, tuple[int, int]]] = [
     (("WWW", "WWW", "WWW"), {"W": B.WHEAT_ITEM}, (B.HAY, 1)),
     (("SSS", "SDS", "SSS"), {"S": B.STONE_BRICKS, "D": B.DIAMOND}, (B.DEEP_GATE, 1)),  # the way down
     (("GSG", "SDS", "GSG"), {"G": B.GLOWSTONE, "S": B.STARSTONE, "D": B.DIAMOND}, (B.SKY_GATE, 1)),  # the way up
+    (("SS", "SS"), {"S": B.RED_SAND}, (B.RED_SANDSTONE, 1)),
+    (("MM", "MM"), {"M": B.MUD}, (B.MUD_BRICKS, 4)),
+    (("TT", "TT"), {"T": frozenset(B.TERRACOTTAS)}, (B.CLAY_TILES, 4)),
+    (("II", "II"), {"I": B.ICE}, (B.PACKED_ICE, 1)),
+    (("DD", "DD"), {"D": frozenset({B.STALACTITE, B.STALAGMITE})}, (B.DRIPSTONE, 1)),
+    (("HH", "HH"), {"H": B.RABBIT_HIDE}, (B.LEATHER, 1)),
+    (("SAS", "ACA", "SAS"), {"S": B.SULFUR, "A": frozenset({B.SAND, B.RED_SAND}), "C": B.COAL}, (B.TNT, 1)),
 ]
 _ARMOR_SHAPES = (("MMM", "M M"), ("M M", "MMM", "MMM"), ("MMM", "M M", "M M"), ("M M", "M M"))
 for _m, _mat in enumerate((B.IRON_INGOT, B.GOLD_INGOT, B.DIAMOND)):
@@ -163,6 +173,8 @@ SHAPELESS: list[tuple[list, tuple[int, int]]] = [
     ([B.IRON_BLOCK], (B.IRON_INGOT, 9)), ([B.GOLD_BLOCK], (B.GOLD_INGOT, 9)), ([B.DIAMOND_BLOCK], (B.DIAMOND, 9)),
     ([B.IRON_INGOT, B.FLINT], (B.FLINT_STEEL, 1)),
     ([B.SUGAR_CANE], (B.SUGAR, 1)), ([B.HAY], (B.WHEAT_ITEM, 9)),
+    *(([log], (planks, 4)) for log, planks in NEW_WOODS),
+    ([B.MOSS, B.COBBLE], (B.MOSSY_COBBLE, 1)),
 ]
 
 
@@ -210,9 +222,11 @@ def match(grid: list[int], width: int) -> tuple[int, int] | None:
 SMELT = {B.COBBLE: B.STONE, B.SAND: B.GLASS, B.IRON_ORE: B.IRON_INGOT, B.GOLD_ORE: B.GOLD_INGOT,
          B.OAK_LOG: B.COAL, B.BIRCH_LOG: B.COAL, B.SPRUCE_LOG: B.COAL, B.PORK: B.COOKED_PORK,
          B.BEEF: B.STEAK, B.CLAY: B.BRICKS, B.FISH: B.COOKED_FISH, B.CHICKEN: B.COOKED_CHICKEN,
-         B.DIAMOND_ORE: B.DIAMOND, B.COAL_ORE: B.COAL, B.REDSTONE_ORE: B.REDSTONE}
+         B.DIAMOND_ORE: B.DIAMOND, B.COAL_ORE: B.COAL, B.REDSTONE_ORE: B.REDSTONE, B.RED_SAND: B.GLASS,
+         B.RAW_RABBIT: B.COOKED_RABBIT, B.MUD: B.TERRACOTTA, **{log: B.COAL for log, _ in NEW_WOODS}}
 SMELT_XP = {B.IRON_INGOT: 0.7, B.GOLD_INGOT: 1.0, B.DIAMOND: 1.0, B.STONE: 0.1, B.GLASS: 0.1, B.COOKED_PORK: 0.35,
-            B.STEAK: 0.35, B.COAL: 0.15, B.COOKED_FISH: 0.35, B.COOKED_CHICKEN: 0.35}
+            B.STEAK: 0.35, B.COAL: 0.15, B.COOKED_FISH: 0.35, B.COOKED_CHICKEN: 0.35, B.COOKED_RABBIT: 0.35,
+            B.TERRACOTTA: 0.1}
 SMELT_TIME = 10.0  # seconds per item
 
 
@@ -223,7 +237,7 @@ def fuel_time(item: int) -> float:
         return 10.0
     return {B.COAL: 80.0, B.OAK_PLANKS: 15.0, B.BIRCH_PLANKS: 15.0, B.SPRUCE_PLANKS: 15.0, B.OAK_LOG: 15.0,
             B.BIRCH_LOG: 15.0, B.SPRUCE_LOG: 15.0, B.STICK: 5.0, B.CRAFTING_TABLE: 15.0,
-            B.BOOKSHELF: 15.0}.get(item, 0.0)
+            B.BOOKSHELF: 15.0, **{b: 15.0 for pair in NEW_WOODS for b in pair}}.get(item, 0.0)
 
 
 class Furnace:

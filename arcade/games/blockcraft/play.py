@@ -13,8 +13,8 @@ from PySide6.QtCore import Qt
 
 from app.arcade.games.blockcraft import blocks as B
 from app.arcade.games.blockcraft import items as I
-from app.arcade.games.blockcraft.entities import (ANIMALS, MOB_DAMAGE, TICK, BlockEntity, ItemEntity, Mob, Particles,
-                                                  Player)
+from app.arcade.games.blockcraft.entities import (ANIMALS, COLD_BIOMES, DRY_BIOMES, HABITAT, HERD, MOB_DAMAGE, TICK,
+                                                  BlockEntity, ItemEntity, Mob, Particles, Player, ground_of)
 from app.arcade.games.blockcraft.fluids import SOFT, Water
 from app.arcade.games.blockcraft.life import realm_key
 from app.arcade.games.blockcraft.render import Env
@@ -30,10 +30,12 @@ MAX_ANIMALS = 14  # near the player
 MAX_MONSTERS = 8
 ENTER_CHUNKS = 3  # the land that must stand around the player before the world opens
 SKY_LIMIT = 220.0  # no flying above this
-REPLACEABLE = {B.AIR, B.WATER, B.TALL_GRASS, B.FERN, B.LAVA, B.DEAD_BUSH, B.SEAGRASS} | \
+REPLACEABLE = {B.AIR, B.WATER, B.TALL_GRASS, B.FERN, B.LAVA, B.DEAD_BUSH, B.SEAGRASS, B.DRY_TUFT} | \
     set(range(B.FLOW + 1, B.FLOW + 8))
 PLANTS = {B.TORCH, B.TALL_GRASS, B.FERN, B.DEAD_BUSH, B.SUGAR_CANE, B.OAK_SAPLING, B.RED_MUSHROOM, B.BROWN_MUSHROOM,
-          B.SEAGRASS, B.KELP, *B.FLOWERS, *B.CROPS}  # they go when the block under them goes
+          B.SEAGRASS, B.KELP, *B.FLOWERS, *B.CROPS, B.STALAGMITE, B.SUNFLOWER, B.SUNFLOWER_TOP, B.DRY_TUFT,
+          B.WISP_BLOOM, B.SULFUR_CRYSTAL}  # they go when the block under them goes
+_STACKS = {B.SUGAR_CANE: B.SUGAR_CANE, B.KELP: B.KELP, B.SUNFLOWER: B.SUNFLOWER_TOP}  # a plant and what stands on it
 WATER_STEP = 5  # game ticks between two steps of running water
 ORE_XP = {B.COAL_ORE: (0, 2), B.DIAMOND_ORE: (3, 7), B.REDSTONE_ORE: (1, 5)}
 
@@ -229,12 +231,15 @@ class PlayMixin:
         ang = self.rng.uniform(0, 2 * math.pi)
         r = self.rng.uniform(near, far)
         x, z = p.x + math.cos(ang) * r, p.z + math.sin(ang) * r
-        kind = ANIMALS[int(self.rng.integers(0, len(ANIMALS)))]
-        for _ in range(int(self.rng.integers(2, 5))):
+        kinds = HABITAT.get(w.biome_name(x, z), ANIMALS[:4]) if self.dim == "over" else ANIMALS[:4]
+        kind = kinds[int(self.rng.integers(0, len(kinds)))]  # who lives in this biome
+        ground = ground_of(kind)
+        lo, hi = HERD.get(kind, (2, 4))
+        for _ in range(int(self.rng.integers(lo, hi + 1))):
             mx, mz = x + self.rng.uniform(-3, 3), z + self.rng.uniform(-3, 3)
             bx, bz = math.floor(mx), math.floor(mz)
             top = w.top_y(bx, bz)
-            if top < 0 or w.get(bx, top, bz) not in (B.GRASS, B.SNOWY_GRASS) or w.light_at(bx, top + 1, bz)[0] < 9:
+            if top < 0 or w.get(bx, top, bz) not in ground or w.light_at(bx, top + 1, bz)[0] < 9:
                 continue
             self.mobs.append(Mob(kind, mx, top + 1.0, mz, self.rng))
 
@@ -564,6 +569,9 @@ class PlayMixin:
                     kind = "zombie" if roll < 0.55 else ("spider" if roll < 0.82 else "slime")
                     if self.dim == "deep":
                         kind = "cinder" if roll < 0.55 else ("slime" if roll < 0.8 else "spider")
+                    elif self.dim == "over" and y >= top and self.rng.random() < 0.55:
+                        biome = w.biome_name(x, z)  # the dry lands and the cold ones have dead of their own
+                        kind = "mummy" if biome in DRY_BIOMES else ("wight" if biome in COLD_BIOMES else kind)
                     self.mobs.append(Mob(kind, x + 0.5, float(y), z + 0.5, self.rng))
                     return
 
@@ -684,8 +692,12 @@ class PlayMixin:
             if random.random() < 0.3:
                 self.sfx.play("bubbles", 0.5 + 0.5 * random.random())
             return
-        if day > 0.6 and rnd() < 0.13 and w.biome_name(p.x, p.z) in ("forest", "birch_forest", "plains", "taiga"):
+        biome = w.biome_name(p.x, p.z)
+        if day > 0.6 and rnd() < 0.13 and biome in ("forest", "birch_forest", "plains", "taiga", "sunflower_meadow",
+                                                    "rainforest", "old_growth_forest", "marsh", "savanna"):
             self.sfx.play(f"bird{int(rnd() * 4)}", 0.35 + 0.65 * rnd())
+        elif day < 0.3 and biome == "marsh" and rnd() < 0.2:
+            self.sfx.play("frog", 0.25 + 0.4 * rnd())  # the marsh at night
         elif day < 0.25 and rnd() < 0.16:
             self.sfx.play("crickets", 0.5 + 0.5 * rnd())
         if rnd() < 0.2 and any(B.FLUID[w.get(x + dx, w.sea, z + dz)] for dx, dz in ((5, 0), (-5, 0), (0, 5), (0, -5),
@@ -844,8 +856,16 @@ class PlayMixin:
                 for item, n in B.drops(top, 0, self.rng):
                     self._spawn_drop(x + 0.5, yy + 0.3, z + 0.5, I.stack(item, n))
             yy += 1
-            if top not in (B.SUGAR_CANE, B.KELP) or w.get(x, yy, z) != top:
+            if _STACKS.get(top) != w.get(x, yy, z):
                 break
+            top = w.get(x, yy, z)
+        yy = y - 1
+        while w.get(x, yy, z) in B.HANGING:  # what hung from it falls too (a whole vine)
+            if not self.creative:
+                for item, n in B.drops(w.get(x, yy, z), 0, self.rng):
+                    self._spawn_drop(x + 0.5, yy + 0.3, z + 0.5, I.stack(item, n))
+            changes.append((x, yy, z, B.AIR))
+            yy -= 1
         self._set_blocks(changes)
         if above in B.GRAVITY:
             self._start_fall(x, y + 1, z)
@@ -946,7 +966,7 @@ class PlayMixin:
     def place_block(self, pos: tuple, normal: tuple, item: int) -> bool:
         w = self.world
         target = w.get(*pos)
-        if target in (B.TALL_GRASS, B.FERN, B.DEAD_BUSH, B.SEAGRASS):
+        if target in (B.TALL_GRASS, B.FERN, B.DEAD_BUSH, B.SEAGRASS, B.DRY_TUFT):
             x, y, z = pos
         else:
             x, y, z = pos[0] + normal[0], pos[1] + normal[1], pos[2] + normal[2]
@@ -962,6 +982,8 @@ class PlayMixin:
             if _box_hit(self.player.box(), box) or any(_box_hit(m.box(), box) for m in self.mobs if not m.dead):
                 return False
         self._set_blocks([(x, y, z, block)])
+        if block == B.SUNFLOWER and w.get(x, y + 1, z) == B.AIR:
+            self._set_blocks([(x, y + 1, z, B.SUNFLOWER_TOP)])  # its head, a block higher
         self.sfx.play(f"place_{material_of(block)}")
         self.swing = 1.0
         if not self.creative:

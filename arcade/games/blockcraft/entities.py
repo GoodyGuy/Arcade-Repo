@@ -1,6 +1,6 @@
 """Things that move: the player (Minecraft's 20 Hz movement physics: friction, sprint, sneak edges, swimming,
-creative flight, fall damage), animals and zombies with box models and simple AI, dropped items, primed TNT,
-falling sand and gravel, and particles."""
+creative flight, fall damage), animals and monsters with box models and simple AI (each animal has its biomes: see
+HABITAT), dropped items, primed TNT, falling sand and gravel, and particles."""
 
 from __future__ import annotations
 
@@ -399,23 +399,195 @@ def _wyrm() -> list:
     return [((22, 14, 26), (0, 0, 0), (0, 7, 0), None, head), ((16, 11, 20), (0, 0, 0), (0, 6, 0), None, body)]
 
 
+def _rabbit() -> list:
+    fur, pale = (150, 112, 78), (232, 226, 214)
+    head = _box_tex(fur, 101, _head_front(fur, seed=102, white=False))
+    body, leg, ear = _box_tex(fur, 103, patches=(132, 96, 64)), _box_tex(fur, 104), _box_tex(fur, 105)
+    ear[4, 1:7, 3:5] = (214, 150, 150)
+    return [((4, 4, 7), (0, 2, 0), (0, 2, 0), None, body),
+            ((4, 4, 4), (0, 6, 3), (0, 1, 2), "head", head),
+            ((1, 4, 1), (0, 6, 3), (-1, 5, 1.5), "head", ear), ((1, 4, 1), (0, 6, 3), (1, 5, 1.5), "head", ear),
+            ((2, 2, 2), (0, 4, -3.5), (0, 0, -1), None, _box_tex(pale, 106)),
+            ((1, 2, 1), (-1.5, 2, 2.5), (0, -1, 0), "a", leg), ((1, 2, 1), (1.5, 2, 2.5), (0, -1, 0), "b", leg),
+            ((2, 2, 3), (-1.5, 2, -2.5), (0, -1, 0), "b", leg), ((2, 2, 3), (1.5, 2, -2.5), (0, -1, 0), "a", leg)]
+
+
+def _horse() -> list:
+    coat, mane, sock = (124, 74, 40), (48, 30, 18), (226, 220, 208)
+    face = _head_front(coat, seed=111, mouth=(88, 52, 30))
+    face[1:6, 3:5] = sock  # a blaze down the nose
+    head = _box_tex(coat, 112, face)
+    body, neck, dark = _box_tex(coat, 113), _box_tex(coat, 114), _box_tex(mane, 115)
+    leg = _box_tex(coat, 116)
+    leg[:, 6:8] = _face_tex(sock, 117)[:2]
+    parts = [((10, 10, 22), (0, 12, 0), (0, 5, 0), None, body),
+             ((4, 9, 5), (0, 19, 9), (0, 4.5, 1.5), "head", neck),
+             ((5, 5, 9), (0, 19, 9), (0, 10, 5), "head", head),
+             ((1, 2, 1), (0, 19, 9), (-1.5, 13.5, 2), "head", dark), ((1, 2, 1), (0, 19, 9), (1.5, 13.5, 2), "head", dark),
+             ((2, 9, 2), (0, 19, 9), (0, 5.5, -1.5), "head", dark),
+             ((2, 9, 2), (0, 21, -11), (0, -4.5, -1), None, dark)]
+    for i, (x, z) in enumerate(((-3.5, 9), (3.5, 9), (-3.5, -9), (3.5, -9))):
+        parts.append(((3, 12, 3), (x, 12, z), (0, -6, 0), "a" if i in (0, 3) else "b", leg))
+    return parts
+
+
+def _polar_bear() -> list:
+    white, shade = (238, 238, 230), (214, 214, 204)
+    face = _head_front(white, seed=121, white=False)
+    head = _box_tex(white, 122, face)
+    snout = _box_tex(shade, 123)
+    snout[4, 2:4, 3:5] = (30, 30, 34)
+    body, leg = _box_tex(white, 124, patches=shade), _box_tex(shade, 125)
+    parts = [((14, 11, 22), (0, 10, 0), (0, 5.5, 0), None, body),
+             ((8, 7, 8), (0, 16, 11), (0, 0, 4), "head", head),
+             ((4, 3, 3), (0, 16, 11), (0, -1.5, 9.5), "head", snout),
+             ((2, 2, 1), (0, 16, 11), (-3, 4, 2), "head", snout), ((2, 2, 1), (0, 16, 11), (3, 4, 2), "head", snout)]
+    for i, (x, z) in enumerate(((-4.5, 8), (4.5, 8), (-4.5, -8), (4.5, -8))):
+        parts.append(((5, 10, 5), (x, 10, z), (0, -5, 0), "a" if i in (0, 3) else "b", leg))
+    return parts
+
+
+def _camel() -> list:
+    tan, dark = (196, 160, 104), (164, 128, 78)
+    head = _box_tex(tan, 131, _head_front(tan, seed=132, mouth=(120, 90, 60)))
+    body, hump, leg = _box_tex(tan, 133, patches=dark), _box_tex(dark, 134), _box_tex(tan, 135)
+    parts = [((10, 9, 22), (0, 14, 0), (0, 4.5, 0), None, body),
+             ((6, 5, 6), (0, 14, 0), (0, 11, 4.5), None, hump), ((6, 5, 6), (0, 14, 0), (0, 11, -4.5), None, hump),
+             ((4, 12, 4), (0, 21, 10), (0, 5, 1), "head", _box_tex(tan, 136)),
+             ((5, 5, 9), (0, 21, 10), (0, 12, 4), "head", head)]
+    for i, (x, z) in enumerate(((-3.5, 8), (3.5, 8), (-3.5, -8), (3.5, -8))):
+        parts.append(((3, 14, 3), (x, 14, z), (0, -7, 0), "a" if i in (0, 3) else "b", leg))
+    return parts
+
+
+def _frog() -> list:
+    green, belly, eye = (88, 150, 60), (198, 206, 140), (226, 200, 60)
+    body = _box_tex(green, 141, patches=(64, 120, 44))
+    body[3] = _face_tex(belly, 142)
+    ball = _box_tex(eye, 143)
+    ball[:, 3:5, 3:5] = (20, 20, 20)
+    leg = _box_tex(green, 144)
+    return [((6, 3, 6), (0, 1, 0), (0, 1.5, 0), None, body),
+            ((5, 3, 3), (0, 3, 3), (0, 0.5, 1), "head", _box_tex(green, 145)),
+            ((2, 2, 2), (0, 3, 3), (-1.5, 2.5, 0.5), "head", ball), ((2, 2, 2), (0, 3, 3), (1.5, 2.5, 0.5), "head", ball),
+            ((2, 2, 4), (-3.5, 2, -2), (0, -1, 0), "a", leg), ((2, 2, 4), (3.5, 2, -2), (0, -1, 0), "b", leg),
+            ((1, 2, 1), (-3, 2, 2), (0, -1, 0), "b", leg), ((1, 2, 1), (3, 2, 2), (0, -1, 0), "a", leg)]
+
+
+def _parrot() -> list:
+    red, blue, yellow, beak = (206, 44, 40), (40, 84, 200), (240, 200, 50), (60, 56, 52)
+    face = _face_tex(red, 151)
+    face[2:4, 1:3] = face[2:4, 5:7] = (244, 244, 240)
+    face[3, 2] = face[3, 5] = (20, 20, 20)
+    wing = _box_tex(blue, 153)
+    wing[:, 0:3] = _face_tex(yellow, 154)[:3]
+    leg = _box_tex(beak, 156)
+    return [((4, 6, 4), (0, 3, 0), (0, 3, 0), None, _box_tex(red, 152)),
+            ((3, 3, 4), (0, 9, 1), (0, 1.5, 0.5), "head", _box_tex(red, 155, face)),
+            ((1, 2, 2), (0, 9, 1), (0, 1, 3), "head", leg),
+            ((1, 5, 3), (-2.5, 8, 0), (0, -2.5, 0), "a", wing), ((1, 5, 3), (2.5, 8, 0), (0, -2.5, 0), "b", wing),
+            ((3, 1, 4), (0, 3, -2), (0, 0.5, -2), None, _box_tex(blue, 157)),
+            ((1, 3, 1), (-1, 3, 0), (0, -1.5, 0), "a", leg), ((1, 3, 1), (1, 3, 0), (0, -1.5, 0), "b", leg)]
+
+
+def _wrapped(colour: tuple, seed: int, band: tuple) -> np.ndarray:
+    """Linen wound round and round: light and dark turns."""
+    faces = _box_tex(colour, seed)
+    faces[:, 1::3] = np.array(band, np.float32)
+    faces[:, 5, 2:5] = np.array(band, np.float32) * 0.8
+    return faces
+
+
+def _mummy() -> list:
+    """What walks the dry lands at night: a dead thing wound in old linen, two green lights in the gap."""
+    linen, band = (206, 196, 160), (160, 148, 112)
+    head = _wrapped(linen, 161, band)
+    head[4, 2:4, 1:7] = (26, 22, 18)
+    head[4, 3, 2] = head[4, 3, 5] = (150, 255, 120)
+    body, arm, leg = _wrapped(linen, 162, band), _wrapped(linen, 163, band), _wrapped(linen, 164, band)
+    strip = _box_tex(band, 165)
+    return [((8, 12, 4), (0, 12, 0), (0, 6, 0), None, body),
+            ((8, 8, 8), (0, 24, 0), (0, 4, 0), "head", head),
+            ((4, 12, 4), (-6, 22, 0), (0, -5, 0), "arm", arm), ((4, 12, 4), (6, 22, 0), (0, -5, 0), "arm", arm),
+            ((1, 7, 1), (-6, 22, 0), (-1, -9, -2.5), "arm", strip), ((1, 5, 1), (0, 24, 0), (3, 0.5, -4.5), "head", strip),
+            ((4, 12, 4), (-2, 12, 0), (0, -6, 0), "a", leg), ((4, 12, 4), (2, 12, 0), (0, -6, 0), "b", leg)]
+
+
+def _wight() -> list:
+    """What walks the frozen lands at night: tall and thin, of blue ice, with a crown of icicles."""
+    ice, deep, glow = (150, 196, 232), (96, 140, 190), (236, 252, 255)
+    face = _face_tex(ice, 171)
+    face[2:4, 1:3] = face[2:4, 5:7] = (30, 48, 80)
+    face[3, 1] = face[3, 6] = glow
+    face[6, 2:6] = (30, 48, 80)
+    limb, spike = _box_tex(deep, 174, patches=ice), _box_tex(glow, 175)
+    return [((6, 14, 4), (0, 14, 0), (0, 7, 0), None, _box_tex(ice, 173, patches=deep)),
+            ((6, 7, 6), (0, 28, 0), (0, 3.5, 0), "head", _box_tex(ice, 172, face, patches=glow)),
+            ((1, 4, 1), (0, 28, 0), (-2, 9, 0), "head", spike), ((1, 6, 1), (0, 28, 0), (0, 10, 0), "head", spike),
+            ((1, 4, 1), (0, 28, 0), (2, 9, 0), "head", spike),
+            ((2, 3, 2), (-4, 28, 0), (0, 1.5, 0), None, spike), ((2, 3, 2), (4, 28, 0), (0, 1.5, 0), None, spike),
+            ((2, 16, 2), (-4, 27, 0), (0, -8, 0), "b", limb), ((2, 16, 2), (4, 27, 0), (0, -8, 0), "a", limb),
+            ((2, 14, 2), (-2, 14, 0), (0, -7, 0), "a", limb), ((2, 14, 2), (2, 14, 0), (0, -7, 0), "b", limb)]
+
+
 MODELS = {"pig": _pig(), "cow": _cow(), "sheep": _sheep(), "zombie": _zombie(), "chicken": _chicken(),
           "fish": _fish(), "spider": _spider(), "slime": _slime(), "settler": _settler(), "guardian": _guardian(),
-          "cinder": _cinder(), "wyrm": _wyrm()}
+          "cinder": _cinder(), "wyrm": _wyrm(), "rabbit": _rabbit(), "horse": _horse(),
+          "polar_bear": _polar_bear(), "camel": _camel(), "frog": _frog(), "parrot": _parrot(), "mummy": _mummy(),
+          "wight": _wight()}
 MOB_SIZE = {"pig": (0.9, 0.9), "cow": (0.9, 1.4), "sheep": (0.9, 1.3), "zombie": (0.6, 1.95), "chicken": (0.5, 0.7),
             "fish": (0.4, 0.35), "spider": (1.2, 0.8), "slime": (0.75, 0.75), "settler": (0.6, 1.9),
-            "guardian": (1.2, 2.6), "cinder": (0.5, 1.3), "wyrm": (2.6, 1.8)}
+            "guardian": (1.2, 2.6), "cinder": (0.5, 1.3), "wyrm": (2.6, 1.8), "rabbit": (0.4, 0.5),
+            "horse": (1.1, 1.6), "polar_bear": (1.2, 1.4), "camel": (1.1, 2.0), "frog": (0.45, 0.35),
+            "parrot": (0.4, 0.8), "mummy": (0.6, 1.95), "wight": (0.6, 2.3)}
 MOB_HEALTH = {"pig": 10, "cow": 10, "sheep": 8, "zombie": 20, "chicken": 4, "fish": 3, "spider": 16, "slime": 8,
-              "settler": 20, "guardian": 80, "cinder": 12, "wyrm": 160}
+              "settler": 20, "guardian": 80, "cinder": 12, "wyrm": 160, "rabbit": 3, "horse": 22,
+              "polar_bear": 30, "camel": 24, "frog": 4, "parrot": 5, "mummy": 24, "wight": 18}
 MOB_DROPS = {"pig": [(B.PORK, 1, 3)], "cow": [(B.BEEF, 1, 3)], "sheep": [(B.WOOL, 1, 1)],
              "zombie": [(B.ROTTEN_FLESH, 0, 2)], "chicken": [(B.CHICKEN, 1, 1), (B.FEATHER, 0, 2)],
              "fish": [(B.FISH, 1, 1)], "spider": [(B.STRING, 0, 2)], "slime": [(B.SLIME_BALL, 0, 2)],
-             "cinder": [(B.COAL, 0, 2)], "wyrm": [(B.GEM, 12, 16), (B.DIAMOND, 5, 8), (B.GOLD_INGOT, 6, 10)]}
-HOSTILE = frozenset({"zombie", "spider", "slime", "cinder"})
-ANIMALS = ("pig", "cow", "sheep", "chicken")  # wander the land, kept in a saved world
+             "cinder": [(B.COAL, 0, 2)], "wyrm": [(B.GEM, 12, 16), (B.DIAMOND, 5, 8), (B.GOLD_INGOT, 6, 10)],
+             "rabbit": [(B.RAW_RABBIT, 1, 1), (B.RABBIT_HIDE, 0, 1)], "horse": [(B.LEATHER, 0, 2)],
+             "polar_bear": [(B.FISH, 0, 2), (B.LEATHER, 0, 1)], "camel": [(B.LEATHER, 0, 2)],
+             "frog": [(B.SLIME_BALL, 0, 1)], "parrot": [(B.FEATHER, 1, 2)],
+             "mummy": [(B.STRING, 0, 2), (B.ROTTEN_FLESH, 0, 2), (B.GOLD_INGOT, 0, 1)],
+             "wight": [(B.PACKED_ICE, 0, 2)]}
+HOSTILE = frozenset({"zombie", "spider", "slime", "cinder", "mummy", "wight"})
+# wander the land, kept in a saved world
+ANIMALS = ("pig", "cow", "sheep", "chicken", "rabbit", "horse", "polar_bear", "camel", "frog", "parrot")
 MOB_SPEED = {"zombie": 0.25, "spider": 0.32, "slime": 0.2, "guardian": 0.2, "settler": 0.13, "chicken": 0.12,
-             "cinder": 0.3}
-MOB_DAMAGE = {"zombie": 3, "spider": 2, "slime": 2, "cinder": 3, "wyrm": 7}
+             "cinder": 0.3, "rabbit": 0.2, "horse": 0.2, "polar_bear": 0.16, "camel": 0.13, "frog": 0.12,
+             "parrot": 0.14, "mummy": 0.2, "wight": 0.3}
+MOB_DAMAGE = {"zombie": 3, "spider": 2, "slime": 2, "cinder": 3, "wyrm": 7, "mummy": 4, "wight": 3, "polar_bear": 5}
+HOP = {"rabbit": 0.3, "frog": 0.4}  # these go by hops: the jump of each
+LIGHT_FOOTED = frozenset({"rabbit", "frog", "parrot", "chicken"})  # a fall does not hurt them
+# where each animal lives (the biomes) and what it stands on; an animal of no biome here: any of the first four
+HABITAT = {
+    "plains": ("pig", "cow", "sheep", "chicken", "horse", "rabbit"), "forest": ("pig", "cow", "chicken", "rabbit"),
+    "birch_forest": ("pig", "cow", "sheep", "chicken"), "sunflower_meadow": ("horse", "rabbit", "sheep", "cow", "chicken"),
+    "desert": ("camel", "camel", "rabbit"), "painted_mesa": ("camel",), "mesa_woodland": ("camel", "rabbit"),
+    "mesa_spires": ("camel",), "savanna": ("horse", "camel", "cow", "sheep"),
+    "savanna_plateau": ("horse", "camel", "cow"), "savanna_crags": ("sheep", "camel"),
+    "taiga": ("rabbit", "pig", "cow", "sheep", "chicken"), "snowy_plains": ("polar_bear", "rabbit", "rabbit"),
+    "ice_spires": ("polar_bear", "rabbit"), "frozen_ocean": ("polar_bear",), "marsh": ("frog", "frog", "chicken", "pig"),
+    "rainforest": ("parrot", "parrot", "pig", "chicken"), "old_growth_forest": ("pig", "rabbit", "cow"),
+    "mountains": ("sheep", "rabbit"),
+}
+_GREEN = (B.GRASS, B.SNOWY_GRASS, B.DRY_GRASS, B.MARSH_GRASS)
+GROUND = {"rabbit": (*_GREEN, B.SAND, B.RED_SAND, B.SNOW), "horse": (B.GRASS, B.DRY_GRASS),
+          "polar_bear": (B.SNOW, B.SNOWY_GRASS, B.ICE, B.PACKED_ICE),
+          "camel": (B.SAND, B.RED_SAND, B.DRY_GRASS, *B.TERRACOTTAS),
+          "frog": (B.MARSH_GRASS, B.MUD, B.GRASS, B.WATER),
+          "parrot": (B.GRASS, B.KAPOK_LEAVES, B.OAK_LEAVES, B.KAPOK_LOG)}
+HERD = {"polar_bear": (1, 2), "camel": (1, 3), "frog": (1, 3), "parrot": (1, 3), "horse": (2, 4), "rabbit": (1, 3)}
+DRY_BIOMES = frozenset({"desert", "painted_mesa", "mesa_woodland", "mesa_spires", "savanna", "savanna_plateau",
+                        "savanna_crags"})  # where mummies walk at night
+COLD_BIOMES = frozenset({"snowy_plains", "ice_spires", "taiga", "frozen_ocean"})  # ... and wights
+
+
+def ground_of(kind: str) -> tuple:
+    """The blocks an animal may appear on."""
+    return GROUND.get(kind, _GREEN)
 
 
 def _rot_y(yaw: float) -> np.ndarray:
@@ -483,6 +655,7 @@ class Mob(Body):
         self.age = 0.0
         self.sound_cool = float(rng.uniform(4, 12))
         self.hostile = kind in HOSTILE
+        self.angry = 0.0  # seconds a struck bear goes for the player
         self.home: tuple | None = None  # (x, y, z, hamlet id) it stays near
         self.leash = 9.0
         self.foe: Mob | None = None  # the monster a guardian goes for
@@ -531,7 +704,10 @@ class Mob(Body):
                 events.append("smash")
                 self.attack_cool = 1.2
                 self.attack_anim = 1.0
-        elif self.hostile and dist < 18 and abs(player.y - self.y) < 8:
+        elif (self.hostile or self.angry > 0) and dist < 18 and abs(player.y - self.y) < 8:
+            if self.angry > 0:
+                self.angry -= TICK
+                speed = 0.3
             self.target_yaw = math.degrees(math.atan2(-dx, dz))
             forward = 1.0 if dist > 0.8 else 0.0
             self.head_pitch = 0.0
@@ -591,16 +767,22 @@ class Mob(Body):
         else:
             if self.on_ground and forward and (self.hit_wall or (self.kind == "slime" and self.rng.random() < 0.15)):
                 self.vy = 0.42
+            elif self.on_ground and forward and self.kind in HOP and self.rng.random() < 0.5:
+                self.vy = HOP[self.kind]
+            elif self.kind == "parrot" and self.on_ground and forward and self.rng.random() < 0.08:
+                self.vy = 0.5  # a flutter up
             slip = 0.546 if self.on_ground else 0.91
             accel = speed * 0.3 if self.on_ground else 0.02
             self.move_relative(0, forward, accel)
             self.move(world, self.vx, self.vy, self.vz)
             if self.on_ground:
-                if self.fall > 3:
+                if self.fall > 3 and self.kind not in LIGHT_FOOTED:
                     self.health -= math.ceil(self.fall - 3)
                     self.hurt = 0.5
                 self.fall = 0.0
             self.vy = (self.vy - 0.08) * 0.98
+            if self.kind == "parrot" and self.vy < -0.07:
+                self.vy = -0.07  # it glides down on its wings
             self.vx *= slip
             self.vz *= slip
         moved = math.hypot(self.x - self.px, self.z - self.pz)
@@ -705,7 +887,9 @@ class Mob(Body):
         self.vx += (self.x - from_x) / d * 0.4
         self.vz += (self.z - from_z) / d * 0.4
         self.vy = 0.36
-        if not self.hostile:
+        if self.kind == "polar_bear":
+            self.angry = 20.0  # a struck bear strikes back
+        elif not self.hostile:
             self.panic = 5.0
 
     def boxes(self, a: float, light: np.ndarray) -> list:

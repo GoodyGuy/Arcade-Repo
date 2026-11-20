@@ -33,6 +33,15 @@ CORNFLOWER, ALLIUM, DAISY, RED_MUSHROOM, BROWN_MUSHROOM, HAY = range(91, 97)
 # the Deep (a world of fire under the world) and the Sky Isles (islands over nothing): BlockCraft's own realms
 (DEEPSTONE, ASH, EMBER_MOSS, GLOWCAP, GLOWSTEM, DEEP_CRYSTAL, BASALT, CHARRED_LOG, STARSTONE, DEEP_GATE, SKY_GATE,
  VOIDSTONE, MOONMOSS, PALE_LOG, PALE_LEAVES, CLOUD, STORM_ALTAR) = range(97, 114)
+# more of the overworld: ice spires, the painted mesa, savanna, marsh, rainforest, old growth, and its cave kinds
+(PACKED_ICE, RED_SAND, RED_SANDSTONE, TERRACOTTA, WHITE_TERRACOTTA, ORANGE_TERRACOTTA, YELLOW_TERRACOTTA,
+ RED_TERRACOTTA, BROWN_TERRACOTTA, GRAY_TERRACOTTA, DRY_GRASS, MARSH_GRASS, MUD, MUD_BRICKS, MOSS, DRIPSTONE,
+ STALACTITE, STALAGMITE, ACACIA_LOG, ACACIA_LEAVES, ACACIA_PLANKS, KAPOK_LOG, KAPOK_LEAVES, KAPOK_PLANKS,
+ BLACKWOOD_LOG, BLACKWOOD_LEAVES, BLACKWOOD_PLANKS, MANGROVE_LOG, MANGROVE_LEAVES, MANGROVE_PLANKS, LILY_PAD, VINE,
+ SUNFLOWER, SUNFLOWER_TOP, DRY_TUFT, LANTERN_VINE, GLOOMSTONE, GLOOM_LICHEN, WISP_BLOOM, SULFUR, SULFUR_CRYSTAL,
+ CLAY_TILES) = range(114, 156)
+TERRACOTTAS = (TERRACOTTA, WHITE_TERRACOTTA, ORANGE_TERRACOTTA, YELLOW_TERRACOTTA, RED_TERRACOTTA, BROWN_TERRACOTTA,
+               GRAY_TERRACOTTA)
 BORDER = 255  # not loaded yet / outside the world (never placed)
 
 # --- item ids (not blocks) ---------------------------------------------------------------------------------------
@@ -46,6 +55,7 @@ ARMOR_MATERIALS = ("iron", "golden", "diamond")
 ARMOR_PIECES = ("helmet", "chestplate", "leggings", "boots")
 ARMOR_POINTS = ((2, 6, 5, 2), (2, 5, 3, 1), (3, 8, 6, 3))  # of 20: each takes 4 % off a blow
 ARMOR_USES = ((165, 240, 225, 195), (77, 112, 105, 91), (363, 528, 495, 429))
+RAW_RABBIT, COOKED_RABBIT, RABBIT_HIDE, LEATHER = range(323, 327)
 TOOL0 = 272  # 272 + material * 4 + kind
 TOOL_KINDS = ("pickaxe", "axe", "shovel", "sword")
 MATERIALS = ("wooden", "stone", "iron", "golden", "diamond")
@@ -105,6 +115,20 @@ NAMES: dict[int, str] = {
     BASALT: "Basalt", CHARRED_LOG: "Charred Log", STARSTONE: "Starstone", DEEP_GATE: "Deep Gate",
     SKY_GATE: "Sky Gate", VOIDSTONE: "Voidstone", MOONMOSS: "Moonmoss", PALE_LOG: "Pale Log",
     PALE_LEAVES: "Pale Leaves", CLOUD: "Cloud", STORM_ALTAR: "Storm Altar",
+    PACKED_ICE: "Packed Ice", RED_SAND: "Red Sand", RED_SANDSTONE: "Red Sandstone", TERRACOTTA: "Terracotta",
+    WHITE_TERRACOTTA: "White Terracotta", ORANGE_TERRACOTTA: "Orange Terracotta",
+    YELLOW_TERRACOTTA: "Yellow Terracotta", RED_TERRACOTTA: "Red Terracotta", BROWN_TERRACOTTA: "Brown Terracotta",
+    GRAY_TERRACOTTA: "Gray Terracotta", DRY_GRASS: "Savanna Grass Block", MARSH_GRASS: "Marsh Grass Block",
+    MUD: "Mud", MUD_BRICKS: "Mud Bricks", MOSS: "Moss Block", DRIPSTONE: "Dripstone", STALACTITE: "Stalactite",
+    STALAGMITE: "Stalagmite", ACACIA_LOG: "Acacia Log", ACACIA_LEAVES: "Acacia Leaves",
+    ACACIA_PLANKS: "Acacia Planks", KAPOK_LOG: "Kapok Log", KAPOK_LEAVES: "Kapok Leaves",
+    KAPOK_PLANKS: "Kapok Planks", BLACKWOOD_LOG: "Blackwood Log", BLACKWOOD_LEAVES: "Blackwood Leaves",
+    BLACKWOOD_PLANKS: "Blackwood Planks", MANGROVE_LOG: "Mangrove Log", MANGROVE_LEAVES: "Mangrove Leaves",
+    MANGROVE_PLANKS: "Mangrove Planks", LILY_PAD: "Lily Pad", VINE: "Vine", SUNFLOWER: "Sunflower",
+    SUNFLOWER_TOP: "Sunflower", DRY_TUFT: "Dry Grass", LANTERN_VINE: "Lantern Vine", GLOOMSTONE: "Gloomstone",
+    GLOOM_LICHEN: "Gloom Lichen", WISP_BLOOM: "Wisp Bloom", SULFUR: "Sulfur Stone",
+    SULFUR_CRYSTAL: "Sulfur Crystal", CLAY_TILES: "Clay Tiles",
+    RAW_RABBIT: "Raw Rabbit", COOKED_RABBIT: "Cooked Rabbit", RABBIT_HIDE: "Rabbit Hide", LEATHER: "Leather",
     WHEAT_SEEDS: "Wheat Seeds", WHEAT_ITEM: "Wheat",
     BREAD: "Bread", SUGAR: "Sugar", BUCKET: "Bucket", WATER_BUCKET: "Water Bucket", FISH: "Raw Fish",
     COOKED_FISH: "Cooked Fish", FEATHER: "Feather", CHICKEN: "Raw Chicken", COOKED_CHICKEN: "Cooked Chicken",
@@ -131,7 +155,7 @@ for _i in range(1, 8):
 
 FOOD = {APPLE: (4, 2.4), PORK: (3, 1.8), COOKED_PORK: (8, 12.8), BEEF: (3, 1.8), STEAK: (8, 12.8),
         ROTTEN_FLESH: (4, 0.8), BREAD: (5, 6.0), FISH: (2, 0.4), COOKED_FISH: (5, 6.0), CHICKEN: (2, 1.2),
-        COOKED_CHICKEN: (6, 7.2)}
+        COOKED_CHICKEN: (6, 7.2), RAW_RABBIT: (3, 1.8), COOKED_RABBIT: (5, 6.0)}
 
 # --- block properties --------------------------------------------------------------------------------------------
 KIND = np.zeros(256, np.uint8)
@@ -159,14 +183,25 @@ _SOLID = {STONE: (1.5, 0, 1, "stone"), GRASS: (0.6, 2, 0, "grass"), DIRT: (0.5, 
           DEEP_CRYSTAL: (1.5, 0, 1, "glass"), BASALT: (1.8, 0, 1, "stone"), CHARRED_LOG: (1.5, 1, 0, "wood"),
           STARSTONE: (4.0, 0, 2, "stone"), DEEP_GATE: (8.0, 0, 2, "stone"), SKY_GATE: (8.0, 0, 2, "stone"),
           VOIDSTONE: (2.2, 0, 1, "stone"), MOONMOSS: (0.6, 2, 0, "grass"), PALE_LOG: (2.0, 1, 0, "wood"),
-          CLOUD: (0.2, -1, 0, "cloth"), STORM_ALTAR: (30.0, 0, 3, "stone")}
+          CLOUD: (0.2, -1, 0, "cloth"), STORM_ALTAR: (30.0, 0, 3, "stone"),
+          PACKED_ICE: (0.5, 0, 0, "glass"), RED_SAND: (0.5, 2, 0, "sand"), RED_SANDSTONE: (0.8, 0, 1, "stone"),
+          DRY_GRASS: (0.6, 2, 0, "grass"), MARSH_GRASS: (0.6, 2, 0, "grass"), MUD: (0.5, 2, 0, "gravel"),
+          MUD_BRICKS: (1.5, 0, 1, "stone"), MOSS: (0.1, 2, 0, "grass"), DRIPSTONE: (1.5, 0, 1, "stone"),
+          ACACIA_LOG: (2.0, 1, 0, "wood"), ACACIA_PLANKS: (2.0, 1, 0, "wood"), KAPOK_LOG: (2.0, 1, 0, "wood"),
+          KAPOK_PLANKS: (2.0, 1, 0, "wood"), BLACKWOOD_LOG: (2.0, 1, 0, "wood"),
+          BLACKWOOD_PLANKS: (2.0, 1, 0, "wood"), MANGROVE_LOG: (2.0, 1, 0, "wood"),
+          MANGROVE_PLANKS: (2.0, 1, 0, "wood"), GLOOMSTONE: (2.2, 0, 1, "stone"),
+          GLOOM_LICHEN: (2.2, 0, 1, "stone"), SULFUR: (1.2, 0, 1, "stone"), CLAY_TILES: (1.6, 0, 1, "stone")}
+for _b in TERRACOTTAS:
+    _SOLID[_b] = (1.25, 0, 1, "stone")
 for _b, (_h, _t, _tier, _m) in _SOLID.items():
     KIND[_b], HARDNESS[_b], TOOL[_b], TIER[_b], MATERIAL[_b] = K_OPAQUE, _h, _t, _tier, _m
 for _b in range(FURNACE, FURNACE + 8):
     KIND[_b], HARDNESS[_b], TOOL[_b], TIER[_b], MATERIAL[_b] = K_OPAQUE, 3.5, 0, 1, "stone"
 for _b in range(WOOL, WOOL + 16):
     KIND[_b], HARDNESS[_b], MATERIAL[_b] = K_OPAQUE, 0.8, "cloth"
-LEAVES = (OAK_LEAVES, BIRCH_LEAVES, SPRUCE_LEAVES)
+LEAVES = (OAK_LEAVES, BIRCH_LEAVES, SPRUCE_LEAVES, ACACIA_LEAVES, KAPOK_LEAVES, BLACKWOOD_LEAVES, MANGROVE_LEAVES)
+DENSE_LEAVES = (KAPOK_LEAVES, BLACKWOOD_LEAVES)  # thick crowns: drawn without holes, no faces between them
 for _b in LEAVES:
     KIND[_b], HARDNESS[_b], MATERIAL[_b] = K_CUTOUT, 0.2, "grass"
 KIND[GLASS], HARDNESS[GLASS], MATERIAL[GLASS] = K_CUTOUT, 0.3, "glass"
@@ -174,9 +209,16 @@ KIND[PALE_LEAVES], HARDNESS[PALE_LEAVES], MATERIAL[PALE_LEAVES] = K_CUTOUT, 0.2,
 KIND[WATER], HARDNESS[WATER] = K_WATER, -1
 FLOWERS = (DANDELION, POPPY, CORNFLOWER, ALLIUM, DAISY)
 CROPS = (WHEAT, WHEAT + 1, WHEAT + 2, WHEAT + 3)
+HANGING = (STALACTITE, VINE, LANTERN_VINE)  # plants that hang from the block above them
+STIFF = (STALACTITE, STALAGMITE, SULFUR_CRYSTAL, WISP_BLOOM, LILY_PAD)  # ... that do not sway in the wind
+FLAT = (LILY_PAD,)  # ... that lie flat (on water)
+GLOW_PLANTS = (LANTERN_VINE, WISP_BLOOM)  # ... drawn at full brightness
 for _b in (TORCH, TALL_GRASS, DEAD_BUSH, FERN, SUGAR_CANE, SEAGRASS, KELP, OAK_SAPLING, RED_MUSHROOM, BROWN_MUSHROOM,
-           *FLOWERS, *CROPS):
+           *FLOWERS, *CROPS, STALACTITE, STALAGMITE, LILY_PAD, VINE, SUNFLOWER, SUNFLOWER_TOP, DRY_TUFT, LANTERN_VINE,
+           WISP_BLOOM, SULFUR_CRYSTAL):
     KIND[_b], HARDNESS[_b], MATERIAL[_b] = K_CROSS, 0.0, "grass"
+MATERIAL[STALACTITE] = MATERIAL[STALAGMITE] = "stone"
+MATERIAL[SULFUR_CRYSTAL] = "glass"
 for _i in range(1, 8):
     KIND[FLOW + _i], HARDNESS[FLOW + _i] = K_WATER, -1
 # water in all its forms: the still block, the running levels, and the plants that grow inside it
@@ -193,6 +235,7 @@ MATERIAL[TORCH] = "wood"
 EMIT[TORCH], EMIT[GLOWSTONE], EMIT[LAVA] = 14, 15, 15
 EMIT[[GLOWCAP, DEEP_CRYSTAL, STARSTONE, DEEP_GATE, SKY_GATE, STORM_ALTAR, PALE_LEAVES]] = 12, 10, 8, 11, 13, 9, 4
 GLOWING = (GLOWCAP, DEEP_CRYSTAL, DEEP_GATE, SKY_GATE)  # drawn at full brightness
+EMIT[[LANTERN_VINE, WISP_BLOOM, GLOOM_LICHEN, SULFUR_CRYSTAL]] = 10, 8, 5, 3
 EMIT[FURNACE_LIT:FURNACE_LIT + 4] = 13
 KIND[BORDER] = K_OPAQUE
 
@@ -200,10 +243,12 @@ OPAQUE = KIND == K_OPAQUE  # blocks light and the player's view
 SOLID = (KIND == K_OPAQUE) | (KIND == K_CUTOUT)  # collides
 SOLID[LAVA] = False
 LIGHT_ATT = np.zeros(256, np.uint8)  # extra light loss passing through
-LIGHT_ATT[[OAK_LEAVES, BIRCH_LEAVES, SPRUCE_LEAVES, PALE_LEAVES]] = 1
+LIGHT_ATT[[OAK_LEAVES, BIRCH_LEAVES, SPRUCE_LEAVES, PALE_LEAVES, ACACIA_LEAVES, MANGROVE_LEAVES]] = 1
+LIGHT_ATT[list(DENSE_LEAVES)] = 1
 LIGHT_ATT[WATERY] = 2
-GRAVITY = {SAND, GRAVEL}
-PLACEABLE = set(NAMES) - {WATER, LAVA, *CROPS} - set(range(FLOW, FLOW + 8)) - set(range(256, 512))
+GRAVITY = {SAND, GRAVEL, RED_SAND}
+SOILS = (GRASS, DIRT, SNOWY_GRASS, FARMLAND, DRY_GRASS, MARSH_GRASS, MUD, MOSS)  # what a plant may stand on
+PLACEABLE = set(NAMES) - {WATER, LAVA, *CROPS, SUNFLOWER_TOP} - set(range(FLOW, FLOW + 8)) - set(range(256, 512))
 CREATIVE_ITEMS = ([GRASS, DIRT, STONE, COBBLE, MOSSY_COBBLE, STONE_BRICKS, BRICKS, OAK_LOG, OAK_PLANKS, BIRCH_LOG,
                    BIRCH_PLANKS, SPRUCE_LOG, SPRUCE_PLANKS, OAK_LEAVES, BIRCH_LEAVES, SPRUCE_LEAVES, SAND, SANDSTONE,
                    GRAVEL, CLAY, GLASS, SNOW, SNOWY_GRASS, ICE, CACTUS, BEDROCK, OBSIDIAN,
@@ -212,13 +257,19 @@ CREATIVE_ITEMS = ([GRASS, DIRT, STONE, COBBLE, MOSSY_COBBLE, STONE_BRICKS, BRICK
                    POPPY, CORNFLOWER, ALLIUM, DAISY, TALL_GRASS, FERN, DEAD_BUSH, OAK_SAPLING, SUGAR_CANE,
                    RED_MUSHROOM, BROWN_MUSHROOM, SEAGRASS, KELP, DEEP_GATE, SKY_GATE, DEEPSTONE, BASALT, ASH,
                    EMBER_MOSS, GLOWCAP, GLOWSTEM, CHARRED_LOG, DEEP_CRYSTAL, STARSTONE, VOIDSTONE, MOONMOSS,
-                   PALE_LOG, PALE_LEAVES, CLOUD]
+                   PALE_LOG, PALE_LEAVES, CLOUD,
+                   DRY_GRASS, MARSH_GRASS, MUD, MUD_BRICKS, MOSS, RED_SAND, RED_SANDSTONE, *TERRACOTTAS, CLAY_TILES,
+                   PACKED_ICE, ACACIA_LOG, ACACIA_PLANKS, ACACIA_LEAVES, KAPOK_LOG, KAPOK_PLANKS, KAPOK_LEAVES,
+                   BLACKWOOD_LOG, BLACKWOOD_PLANKS, BLACKWOOD_LEAVES, MANGROVE_LOG, MANGROVE_PLANKS, MANGROVE_LEAVES,
+                   SUNFLOWER, DRY_TUFT, VINE, LILY_PAD, DRIPSTONE, STALACTITE, STALAGMITE, LANTERN_VINE, GLOOMSTONE,
+                   GLOOM_LICHEN, WISP_BLOOM, SULFUR, SULFUR_CRYSTAL]
                   + [WOOL + i for i in range(16)]
                   + [tool_id(m, k) for m in range(5) for k in range(4)]
                   + [HOE0 + m for m in range(5)] + [ARMOR0 + i for i in range(12)]
                   + [BUCKET, WATER_BUCKET, STICK, COAL, IRON_INGOT, GOLD_INGOT, DIAMOND, REDSTONE, GEM, FLINT,
                      FLINT_STEEL, STRING, FEATHER, SLIME_BALL, WHEAT_SEEDS, WHEAT_ITEM, SUGAR, APPLE, BREAD, PORK,
-                     COOKED_PORK, BEEF, STEAK, CHICKEN, COOKED_CHICKEN, FISH, COOKED_FISH, ROTTEN_FLESH])
+                     COOKED_PORK, BEEF, STEAK, CHICKEN, COOKED_CHICKEN, FISH, COOKED_FISH, ROTTEN_FLESH,
+                     RAW_RABBIT, COOKED_RABBIT, RABBIT_HIDE, LEATHER])
 
 
 def is_block(item: int) -> bool:
@@ -261,11 +312,13 @@ def drops(b: int, tool: int, rng: np.random.Generator) -> list[tuple[int, int]]:
             return []
     b = base_block(b)
     table = {STONE: COBBLE, GRASS: DIRT, COAL_ORE: COAL, DIAMOND_ORE: DIAMOND, GLOWSTONE: GLOWSTONE,
-             BOOKSHELF: OAK_PLANKS, SNOWY_GRASS: DIRT, FARMLAND: DIRT}
+             BOOKSHELF: OAK_PLANKS, SNOWY_GRASS: DIRT, FARMLAND: DIRT, DRY_GRASS: DIRT, MARSH_GRASS: DIRT}
     if FLUID[b] or b == SEAGRASS:
         return []
-    if b in (TALL_GRASS, FERN):
+    if b in (TALL_GRASS, FERN, DRY_TUFT):
         return [(WHEAT_SEEDS, 1)] if rng.random() < 0.14 else []
+    if b == SUNFLOWER_TOP:
+        return []
     if b in CROPS:
         if b == WHEAT + 3:
             return [(WHEAT_ITEM, 1), (WHEAT_SEEDS, int(rng.integers(1, 4)))]
@@ -907,9 +960,203 @@ def _build_realms() -> None:
     _add("storm_altar", alt)
 
 
+def _cone(rng, cols: list, up: bool, tip: str | None = None) -> np.ndarray:
+    """A spike of stone as a plant sprite: standing on the floor (``up``) or hanging from the roof."""
+    rgb = np.zeros((16, 16, 3), np.float32)
+    alpha = np.zeros((16, 16), np.uint8)
+    pal = _pick(rng, cols)
+    for y in range(16):  # y 0 is the root, 15 the point
+        half = 0.6 + (15 - y) * 0.26
+        x0, x1 = int(round(7.5 - half)), int(round(7.5 + half))
+        row = y if not up else 15 - y
+        alpha[row, x0:x1 + 1] = 255
+        rgb[row, x0:x1 + 1] = pal[row, x0:x1 + 1]
+        rgb[row, x1] *= 0.78
+    if tip:
+        row = 15 if not up else 0
+        rgb[row, 7:9] = _hex(tip)
+    return _rgba(rgb, alpha)
+
+
+def _dense_leaves(rng, colours: list) -> np.ndarray:
+    """Leaves without holes: where the gaps would be, the dark inside of the crown."""
+    rgb = _pick(rng, colours, [3, 4, 3, 2])
+    gaps = rng.random((16, 16)) < 0.2
+    rgb[gaps] *= 0.55
+    return rgb
+
+
+def _wood_top(rng, inner: list, bark: np.ndarray) -> np.ndarray:
+    yy, xx = np.mgrid[0:16, 0:16]
+    ring = np.maximum(np.abs(xx - 7.5), np.abs(yy - 7.5))
+    cols = np.array([_hex(c) for c in inner], np.float32)
+    rgb = cols[(ring.astype(int) // 2) % len(cols)] + rng.normal(0, 4, (16, 16, 1))
+    rgb[ring >= 7] = bark[ring >= 7]
+    return rgb
+
+
+def _hang(rng, cols: list, strands: int, dots: str | None = None) -> np.ndarray:
+    """Strands hanging from the top of the tile (vines)."""
+    rgb = np.zeros((16, 16, 3), np.float32)
+    alpha = np.zeros((16, 16), np.uint8)
+    for _ in range(strands):
+        x = int(rng.integers(1, 15))
+        for y in range(int(rng.integers(9, 17))):
+            if rng.random() < 0.3:
+                x = int(np.clip(x + rng.choice([-1, 1]), 0, 15))
+            rgb[y, x] = _hex(cols[int(rng.integers(0, len(cols)))])
+            alpha[y, x] = 255
+            if rng.random() < 0.3 and x < 15:  # a leaf
+                rgb[y, x + 1] = _hex(cols[0])
+                alpha[y, x + 1] = 255
+            if dots and y > 3 and rng.random() < 0.16:
+                rgb[y, x] = _hex(dots)
+    return _rgba(rgb, alpha)
+
+
+TERRACOTTA_COLOURS = (("terracotta", (152, 94, 68)), ("white_terracotta", (210, 178, 161)),
+                      ("orange_terracotta", (162, 84, 38)), ("yellow_terracotta", (186, 133, 35)),
+                      ("red_terracotta", (143, 61, 47)), ("brown_terracotta", (77, 51, 36)),
+                      ("gray_terracotta", (135, 107, 98)))
+DRY_TINT, MARSH_TINT = (240, 222, 112), (112, 132, 64)  # (over the pack's grey grass pictures)
+
+
+def _build_biomes() -> None:
+    """The blocks of the newer overworld biomes and caves, drawn by code (the fallback for the texture pack)."""
+    def r(seed: int) -> np.random.Generator:
+        return np.random.default_rng(seed)
+
+    ice = _pick(r(300), ["a5c4f2", "b3cff6", "9bbcee", "c0d8fa"], [4, 3, 2, 2])
+    for k in range(4):
+        y, x = r(301 + k).integers(1, 10, 2)
+        for i in range(6):
+            ice[y + i, x + (i // 2)] = (226, 240, 255)
+    _add("packed_ice", ice)
+    red = ["bf6a2c", "c9743a", "b55f24", "d08046", "a9561e"]
+    _add("red_sand", _pick(r(305), red, [4, 3, 3, 1, 1]))
+    rs = _pick(r(306), red[:3], [3, 3, 2])
+    rs[12:, :] *= 0.9
+    rs[0:2, :] *= 1.05
+    _add("red_sandstone", rs)
+    _add("red_sandstone_top", _pick(r(307), red[:3], [3, 3, 2]))
+    for k, (name, colour) in enumerate(TERRACOTTA_COLOURS):
+        n = _smooth_noise(r(310 + k), blur=2) * 0.12 + r(320 + k).random((16, 16)) * 0.05 + 0.92
+        clay = np.array(colour, np.float32) * n[..., None]
+        clay[5::6, :] *= 0.95  # faint beds
+        _add(name, clay)
+    dirt = _dirt(r(2))
+    for prefix, pal, seed in (("dry_grass", ["b5a94e", "c2b65a", "a89c44", "cfc468", "9c9040"], 330),
+                              ("marsh_grass", ["4f6a32", "5a7539", "44602b", "66803f", "3b5526"], 334)):
+        top = _pick(r(seed), pal, [5, 5, 4, 2, 2])
+        _add(prefix + "_top", top)
+        side = dirt.copy()
+        rng = r(seed + 1)
+        for x in range(16):
+            depth = 3 + (rng.random() < 0.55) + (rng.random() < 0.2)
+            side[:depth, x] = top[:depth, x]
+        _add(prefix + "_side", side)
+    mud = _pick(r(338), ["3c3037", "45383f", "33282f", "4e4047"], [4, 3, 3, 1])
+    mud[r(339).random((16, 16)) < 0.05] = (98, 84, 90)
+    _add("mud", mud)
+    mb = _pick(r(340), ["8a6e58", "937760", "7d624e"], [4, 3, 3])
+    for y in range(16):
+        if y % 4 == 3:
+            mb[y] = _hex("5e4a3c")
+        else:
+            off = 0 if (y // 4) % 2 == 0 else 4
+            mb[y, (off + 7) % 16] = mb[y, (off + 15) % 16] = _hex("5e4a3c")
+    _add("mud_bricks", mb)
+    _add("moss", _pick(r(341), ["5a7a2a", "668a32", "4d6c22", "73983a", "425e1c"], [4, 4, 3, 2, 2]))
+    drip_cols = ["84614c", "8f6b55", "775542", "9a7660"]
+    drip = _pick(r(342), drip_cols, [4, 3, 3, 1])
+    drip[:, ::3] *= 0.9
+    _add("dripstone", drip)
+    _add("stalactite", _cone(r(343), drip_cols, False))
+    _add("stalagmite", _cone(r(344), drip_cols, True))
+    for name, bark, streak, inner, planks, seed in (
+            ("acacia", ["6b655c", "5f5950", "777167", "534d45"], "3d3832", ["c06a3c", "ad5d32", "9a522b"],
+             ("c06a3c", "ad5d32", "9a522b", "7d4020"), 350),
+            ("kapok", ["584a25", "4c3f1e", "65562d", "3f3418"], "2c2410", ["b88a62", "a87a54", "966a46"],
+             ("b88a62", "a87a54", "966a46", "7a5436"), 354),
+            ("blackwood", ["3a2a16", "2f210f", "44321c", "251a0a"], "150d04", ["5a3d22", "4d331b", "66472a"],
+             ("553820", "4a3019", "3f2813", "2c1b0c"), 358),
+            ("mangrove", ["6a4a34", "5c3f2b", "77553d", "4f3523"], "38241a", ["8c3f3a", "7d3530", "9a4a44"],
+             ("8c3f3a", "7d3530", "6c2c28", "521f1c"), 362)):
+        side = _log_side(r(seed), False, bark, streak)
+        _add(name + "_log", side)
+        _add(name + "_log_top", _wood_top(r(seed + 1), inner, side))
+        _add(name + "_planks", _planks(r(seed + 2), *planks))
+    _add("acacia_leaves", _leaves(r(366), ["7f8f2a", "8c9c33", "6f7f22", "9aa83d"]))
+    _add("mangrove_leaves", _leaves(r(367), ["4f7a2c", "5a8833", "446a25", "689a3c"]))
+    _add("kapok_leaves", _dense_leaves(r(368), ["3a8f22", "46a02a", "2f7a1a", "55b034"]))
+    _add("blackwood_leaves", _dense_leaves(r(369), ["2f5a1c", "376623", "274d16", "1f4010"]))
+    yy, xx = np.mgrid[0:16, 0:16]
+    pad = np.zeros((16, 16, 3), np.float32)
+    disc = np.hypot(xx - 7.5, yy - 7.5)
+    on = (disc < 6.6) & ~((xx > 7) & (np.abs(yy - 7.5) < (xx - 7) * 0.45))  # a notch
+    pad[:] = _pick(r(370), ["2f8a3a", "38983f", "277a31"])
+    pad[on & (disc > 5.4)] = _hex("1f6427")
+    _add("lily_pad", _rgba(pad, np.where(on, 255, 0)))
+    _add("vine", _hang(r(371), ["3f8a2a", "4a9a32", "347a22"], 5))
+    _add("lantern_vine", _hang(r(372), ["3f8a2a", "4a9a32", "347a22"], 4, "ffb43a"))
+    stalk = np.zeros((16, 16, 3), np.float32)
+    sa = np.zeros((16, 16), np.uint8)
+    stalk[:, 7:9] = _hex("3f7a20")
+    sa[:, 7:9] = 255
+    for y, x0, x1 in ((4, 3, 7), (5, 2, 7), (9, 9, 13), (10, 9, 14), (13, 4, 7)):
+        stalk[y, x0:x1] = _hex("4f9a2a")
+        sa[y, x0:x1] = 255
+    _add("sunflower", _rgba(stalk, sa))
+    head = np.zeros((16, 16, 3), np.float32)
+    ha = np.zeros((16, 16), np.uint8)
+    head[8:, 7:9] = _hex("3f7a20")
+    ha[8:, 7:9] = 255
+    d = np.hypot(xx - 7.5, yy - 5.5)
+    ax, ay = np.abs(xx - 7.5), np.abs(yy - 5.5)
+    petal = (d < 5.6) & ((ax < 1.6) | (ay < 1.6) | (np.abs(ax - ay) < 1.3) | (d < 4))
+    head[petal] = _pick(r(373), ["ffd91a", "f5c515", "ffe84d"])[petal]
+    head[d < 2.4] = _hex("5a3a14")
+    ha[petal] = 255
+    _add("sunflower_top", _rgba(head, ha))
+    _add("dry_tuft", _blades(r(374), ["b5a94e", "c2b65a", "9c9040"], 11, 3, 9))
+    gloom = _stone(r(375)) * np.array([0.30, 0.33, 0.44], np.float32)
+    _add("gloomstone", gloom)
+    lichen = gloom.copy()
+    spots = _smooth_noise(r(376), blur=1) > 0.62
+    lichen[spots] = _pick(r(377), ["58c8b0", "7fe6cf", "3f9f8c"])[spots]
+    _add("gloom_lichen", lichen)
+    wisp = np.zeros((16, 16, 3), np.float32)
+    wa = np.zeros((16, 16), np.uint8)
+    for x, top in ((4, 9), (8, 5), (12, 10)):
+        wisp[top:, x] = _hex("6f8f9a")
+        wa[top:, x] = 255
+        wisp[top - 2:top, x - 1:x + 2] = _hex("b8fff0")
+        wisp[top - 1, x] = _hex("ffffff")
+        wa[top - 2:top, x - 1:x + 2] = 255
+    _add("wisp_bloom", _rgba(wisp, wa))
+    sul_cols = ["d8c85a", "e2d268", "cabb4e", "b9a940", "efe07a"]
+    sul = _pick(r(378), sul_cols, [4, 3, 3, 2, 1])
+    for k in range(3):
+        y, x = r(379 + k).integers(1, 11, 2)
+        for i in range(5):
+            sul[y + i, x + (i * (1 if k % 2 else -1)) // 2 + 2] = _hex("9a8a30")
+    _add("sulfur", sul)
+    _add("sulfur_crystal", _cone(r(383), sul_cols, True, "fff8b0"))
+    tiles = np.zeros((16, 16, 3), np.float32)
+    shades = r(384).uniform(0.88, 1.1, (2, 2))
+    for ty in range(2):
+        for tx in range(2):
+            tiles[ty * 8:ty * 8 + 8, tx * 8:tx * 8 + 8] = np.array((168, 96, 62), np.float32) * shades[ty, tx]
+    tiles += r(385).normal(0, 4, (16, 16, 1))
+    tiles[7::8, :] = tiles[:, 7::8] = _hex("6e4634")
+    tiles[0::8, :] = np.minimum(tiles[0::8, :] * 1.12, 255)
+    _add("clay_tiles", tiles)
+
+
 _build_textures()
 _build_more()
 _build_realms()
+_build_biomes()
 
 # --- the texture pack ------------------------------------------------------------------------------------------------
 log = logging.getLogger(__name__)
@@ -920,7 +1167,10 @@ _PACK_ITEMS: dict[int, np.ndarray] = {}
 _CUTOUT_TEX = {"oak_leaves", "birch_leaves", "spruce_leaves", "glass", "torch", "dandelion", "poppy", "tall_grass",
                "pale_leaves",
                "dead_bush", "fern", "sugar_cane", "seagrass", "kelp", "wheat0", "wheat1", "wheat2", "wheat3",
-               "oak_sapling", "cornflower", "allium", "daisy", "red_mushroom", "brown_mushroom"}
+               "oak_sapling", "cornflower", "allium", "daisy", "red_mushroom", "brown_mushroom",
+               "acacia_leaves", "mangrove_leaves", "lily_pad", "vine", "sunflower", "sunflower_top", "dry_tuft",
+               "lantern_vine", "sulfur_crystal", "stalactite", "stalagmite", "wisp_bloom"}
+_FILLED_TEX = {"kapok_leaves", "blackwood_leaves"}  # leaves drawn without holes: the gaps show the dark inside
 # our texture -> the pack's block picture (most have the same name)
 _PACK_BLOCKS = {n: n for n in (
     "stone", "dirt", "cobblestone", "mossy_cobblestone", "oak_planks", "birch_planks", "spruce_planks", "bedrock",
@@ -936,6 +1186,18 @@ _PACK_BLOCKS.update({
     "snowy_grass_side": "grass_block_snow", "farmland": "farmland_moist", "daisy": "oxeye_daisy",
     "hay_side": "hay_block_side", "hay_top": "hay_block_top", "bed_top": "red_wool",
     "wheat0": "wheat_stage0", "wheat1": "wheat_stage2", "wheat2": "wheat_stage4", "wheat3": "wheat_stage6"})
+_PACK_BLOCKS.update({n: n for n in (
+    "packed_ice", "red_sand", "red_sandstone", "red_sandstone_top", "terracotta", "white_terracotta",
+    "orange_terracotta", "yellow_terracotta", "red_terracotta", "brown_terracotta", "mud", "mud_bricks",
+    "acacia_log", "acacia_log_top", "acacia_leaves", "acacia_planks", "mangrove_log", "mangrove_log_top",
+    "mangrove_leaves", "mangrove_planks", "lily_pad", "vine", "sulfur")})
+_PACK_BLOCKS.update({
+    "gray_terracotta": "light_gray_terracotta", "dry_grass_top": "grass_block_top",
+    "marsh_grass_top": "grass_block_top", "moss": "moss_block", "dripstone": "dripstone_block",
+    "kapok_log": "jungle_log", "kapok_log_top": "jungle_log_top", "kapok_leaves": "jungle_leaves",
+    "kapok_planks": "jungle_planks", "blackwood_log": "dark_oak_log", "blackwood_log_top": "dark_oak_log_top",
+    "blackwood_leaves": "dark_oak_leaves", "blackwood_planks": "dark_oak_planks", "sunflower": "sunflower_bottom",
+    "dry_tuft": "short_grass", "lantern_vine": "cave_vines_lit", "sulfur_crystal": "sulfur_spire_small"})
 _PACK_BLOCKS.update({f"wool{i}": f"{c}_wool" for i, c in enumerate(
     ("white", "orange", "magenta", "light_blue", "yellow", "lime", "pink", "gray", "light_gray", "cyan", "purple",
      "blue", "brown", "green", "red", "black"))})
@@ -946,7 +1208,8 @@ _PACK_ITEM_FILES = {STICK: "stick", COAL: "coal", IRON_INGOT: "iron_ingot", GOLD
                     WHEAT_ITEM: "wheat", BREAD: "bread", SUGAR: "sugar", BUCKET: "bucket",
                     WATER_BUCKET: "water_bucket", FISH: "cod", COOKED_FISH: "cooked_cod", FEATHER: "feather",
                     CHICKEN: "chicken", COOKED_CHICKEN: "cooked_chicken", STRING: "string",
-                    SLIME_BALL: "slime_ball", GEM: "emerald"}
+                    SLIME_BALL: "slime_ball", GEM: "emerald", RAW_RABBIT: "rabbit", COOKED_RABBIT: "cooked_rabbit",
+                    RABBIT_HIDE: "rabbit_hide", LEATHER: "leather"}
 for _m, _mn in enumerate(MATERIALS):
     for _k, _kn in enumerate(TOOL_KINDS):
         _PACK_ITEM_FILES[tool_id(_m, _k)] = f"{_mn}_{_kn}"
@@ -956,7 +1219,10 @@ for _m, _mn in enumerate(ARMOR_MATERIALS):
         _PACK_ITEM_FILES[ARMOR0 + _m * 4 + _k] = f"{_mn}_{_kn}"
 # what the game engine these packs are drawn for colours in itself: the pack's own colour maps for grass and oak
 # leaves (read at a mild, green spot), and fixed colours for the other leaves and for water
-_TINT_FIXED = {"birch_leaves": (128, 167, 85), "spruce_leaves": (97, 153, 97), "water": (63, 118, 228)}
+_TINT_FIXED = {"birch_leaves": (128, 167, 85), "spruce_leaves": (97, 153, 97), "water": (63, 118, 228),
+               "acacia_leaves": (214, 204, 84), "kapok_leaves": (62, 170, 30), "blackwood_leaves": (86, 138, 54),
+               "mangrove_leaves": (108, 150, 52), "vine": (70, 150, 44), "lily_pad": (40, 132, 52),
+               "dry_grass_top": DRY_TINT, "dry_tuft": DRY_TINT, "marsh_grass_top": MARSH_TINT}
 _TINT_GRASS = ("grass_top", "tall_grass", "fern")
 _COLOURMAP_SPOT = (173, 51)  # (row, column)
 
@@ -1002,7 +1268,8 @@ def _apply_pack() -> None:
 
     def tinted(img: np.ndarray, colour: tuple) -> np.ndarray:
         out = img.copy()
-        out[..., :3] = (img[..., :3].astype(np.float32) * (np.array(colour[:3], np.float32) / 255)).astype(np.uint8)
+        out[..., :3] = np.clip(img[..., :3].astype(np.float32) * (np.array(colour[:3], np.float32) / 255), 0,
+                              255).astype(np.uint8)
         return out
 
     grass_tint = foliage_tint = None
@@ -1028,16 +1295,29 @@ def _apply_pack() -> None:
         if ours in _CUTOUT_TEX:
             img[..., 3] = np.where(img[..., 3] > 127, 255, 0)
         else:
+            if ours in _FILLED_TEX:
+                solid = img[..., 3] > 127
+                if solid.any():
+                    img[~solid, :3] = (img[solid][:, :3].mean(0) * 0.45).astype(np.uint8)
             img[..., 3] = 255
         _TEX[ours] = img
         used += 1
-    side, over = tile("block", "grass_block_side"), tile("block", "grass_block_side_overlay")
-    if side is not None:
-        if over is not None and grass_tint:
-            a = (over[..., 3:4] > 127)
-            side[..., :3] = np.where(a, tinted(over, grass_tint)[..., :3], side[..., :3])
-        side[..., 3] = 255
-        _TEX["grass_side"] = side
+    for ours, tint in (("grass_side", grass_tint), ("dry_grass_side", DRY_TINT), ("marsh_grass_side", MARSH_TINT)):
+        side, over = tile("block", "grass_block_side"), tile("block", "grass_block_side_overlay")
+        if side is not None and (ours == "grass_side" or over is not None):
+            if over is not None and tint:
+                a = (over[..., 3:4] > 127)
+                side[..., :3] = np.where(a, tinted(over, tint)[..., :3], side[..., :3])
+            side[..., 3] = 255
+            _TEX[ours] = side
+    stem, face = tile("block", "sunflower_top"), tile("block", "sunflower_front")
+    if stem is not None and face is not None:  # the head on its stem, as one plant picture
+        head = stem.copy()
+        head[:3] = 0
+        on = face[..., 3] > 127
+        head[:13][on[3:]] = face[3:][on[3:]]
+        head[..., 3] = np.where(head[..., 3] > 127, 255, 0)
+        _TEX["sunflower_top"] = head
     for liquid, tint in (("water", _TINT_FIXED["water"]), ("lava", None)):
         strip = _read_png(root / "block" / f"{liquid}_still.png")
         if strip is None or strip.shape[1] != 16 or strip.shape[0] < 16:
@@ -1107,6 +1387,24 @@ for _b, _n in ((DEEPSTONE, "deepstone"), (ASH, "ash"), (GLOWCAP, "glowcap"), (GL
                (DEEP_GATE, "deep_gate"), (SKY_GATE, "sky_gate"), (VOIDSTONE, "voidstone"), (PALE_LOG, "pale_log"),
                (PALE_LEAVES, "pale_leaves"), (CLOUD, "cloud"), (STORM_ALTAR, "storm_altar")):
     _faces(_b, _n)
+for _b, _n in ((PACKED_ICE, "packed_ice"), (RED_SAND, "red_sand"), (MUD, "mud"), (MUD_BRICKS, "mud_bricks"),
+               (MOSS, "moss"), (DRIPSTONE, "dripstone"), (STALACTITE, "stalactite"), (STALAGMITE, "stalagmite"),
+               (ACACIA_LEAVES, "acacia_leaves"), (ACACIA_PLANKS, "acacia_planks"), (KAPOK_LEAVES, "kapok_leaves"),
+               (KAPOK_PLANKS, "kapok_planks"), (BLACKWOOD_LEAVES, "blackwood_leaves"),
+               (BLACKWOOD_PLANKS, "blackwood_planks"), (MANGROVE_LEAVES, "mangrove_leaves"),
+               (MANGROVE_PLANKS, "mangrove_planks"), (LILY_PAD, "lily_pad"), (VINE, "vine"),
+               (SUNFLOWER, "sunflower"), (SUNFLOWER_TOP, "sunflower_top"), (DRY_TUFT, "dry_tuft"),
+               (LANTERN_VINE, "lantern_vine"), (GLOOMSTONE, "gloomstone"), (GLOOM_LICHEN, "gloom_lichen"),
+               (WISP_BLOOM, "wisp_bloom"), (SULFUR, "sulfur"), (SULFUR_CRYSTAL, "sulfur_crystal"),
+               (CLAY_TILES, "clay_tiles")):
+    _faces(_b, _n)
+for _b, (_n, _c) in zip(TERRACOTTAS, TERRACOTTA_COLOURS, strict=True):
+    _faces(_b, _n)
+_faces(RED_SANDSTONE, "red_sandstone", "red_sandstone_top")
+_faces(DRY_GRASS, "dry_grass_side", "dry_grass_top", "dirt")
+_faces(MARSH_GRASS, "marsh_grass_side", "marsh_grass_top", "dirt")
+for _b, _n in ((ACACIA_LOG, "acacia"), (KAPOK_LOG, "kapok"), (BLACKWOOD_LOG, "blackwood"), (MANGROVE_LOG, "mangrove")):
+    _faces(_b, _n + "_log", _n + "_log_top")
 _faces(EMBER_MOSS, "ember_moss_side", "ember_moss", "deepstone")
 _faces(MOONMOSS, "moonmoss_side", "moonmoss", "voidstone")
 _faces(BASALT, "basalt", "basalt_top")
@@ -1249,7 +1547,8 @@ _PLAIN = {WHEAT_SEEDS: ("7cbf52", "4a7d29"), WHEAT_ITEM: ("e6d470", "b8902a"), B
           SUGAR: ("f4f4f4", "c8c8c8"), BUCKET: ("c8c8c8", "6a6a6a"), WATER_BUCKET: ("5a8cf0", "2f5fd8"),
           FISH: ("8aa8c8", "4a6a8a"), COOKED_FISH: ("d8b890", "8a6a42"), FEATHER: ("f0f0f0", "b0b0b0"),
           CHICKEN: ("f0c0b0", "b08070"), COOKED_CHICKEN: ("c88a5a", "7a4a2a"), STRING: ("e8e8e8", "a8a8a8"),
-          SLIME_BALL: ("7cd060", "3a8a2a"), GEM: ("3ad878", "187a3a")}
+          SLIME_BALL: ("7cd060", "3a8a2a"), GEM: ("3ad878", "187a3a"), RAW_RABBIT: ("e8b0a0", "a87060"),
+          COOKED_RABBIT: ("c08a5a", "7a4a2a"), RABBIT_HIDE: ("c8a878", "8a6a42"), LEATHER: ("a8643a", "6a3a1a")}
 
 
 _ARMOR_SHAPES = (["..mmmmmm..", ".mmmmmmmm.", ".mmmmmmmm.", ".mm....mm.", ".mm....mm."],
