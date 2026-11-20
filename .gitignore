@@ -1,0 +1,24 @@
+__pycache__/
+*.py[co]
+Thumbs.db
+desktop.ini
+*.lnk
+*.xcf
+
+# Texture packs kept beside the game locally but not read by it
+arcade/games/blockcraft/Faithful*/
+arcade/games/blockcraft/pixel_imperfection/
+
+# Pixel Perfection: only the textures BlockCraft reads are published (block, item, colormap)
+arcade/games/blockcraft/Pixel Perfection*/*
+!arcade/games/blockcraft/Pixel Perfection*/pack.txt
+!arcade/games/blockcraft/Pixel Perfection*/pack.mcmeta
+!arcade/games/blockcraft/Pixel Perfection*/assets/
+arcade/games/blockcraft/Pixel Perfection*/assets/*
+!arcade/games/blockcraft/Pixel Perfection*/assets/minecraft/
+arcade/games/blockcraft/Pixel Perfection*/assets/minecraft/*
+!arcade/games/blockcraft/Pixel Perfection*/assets/minecraft/textures/
+arcade/games/blockcraft/Pixel Perfection*/assets/minecraft/textures/*
+!arcade/games/blockcraft/Pixel Perfection*/assets/minecraft/textures/block/
+!arcade/games/blockcraft/Pixel Perfection*/assets/minecraft/textures/item/
+!arcade/games/blockcraft/Pixel Perfection*/assets/minecraft/textures/colormap/
