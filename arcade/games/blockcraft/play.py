@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import logging
 import math
+import random
 import time
 
 import numpy as np
@@ -97,6 +98,7 @@ class PlayMixin:
         self.sprint_key = False
         self.step_dist = 0.0
         self.was_in_water = False
+        self.left_water = -999  # the tick of the last splash on coming out of the water
         self.edit_time = 0.0
         self.rng = np.random.default_rng()
         self.music_timer = 20.0
@@ -348,6 +350,9 @@ class PlayMixin:
         if p.in_water and not self.was_in_water and p.vy < -0.15:
             self.sfx.play("splash")
             self.particles.puff(p.x, p.y + 0.3, p.z, (200, 220, 255), 12, 0.08)
+        elif self.was_in_water and not p.in_water and p.vy > 0.1 and self.tick_count - self.left_water > 40:
+            self.left_water = self.tick_count  # climbing or jumping out (not bobbing at the surface)
+            self.sfx.play("splash_out", 0.6)
         self.was_in_water = p.in_water
         if p.on_ground and not p.sneaking:
             self.step_dist += math.hypot(p.x - p.px, p.z - p.pz)
@@ -672,8 +677,12 @@ class PlayMixin:
         if sky < 4 and (y < w.sea - 6 or self.dim == "deep"):  # underground
             if rnd() < 0.09:
                 self.sfx.play(f"drip{int(rnd() * 2)}", 0.5 + 0.5 * rnd())
+            elif random.random() < 0.035:  # the hollow air of a cave, now and then (not the world's dice)
+                self.sfx.play("cave", 0.6 + 0.4 * random.random())
             return
         if self._eye_in_water():
+            if random.random() < 0.3:
+                self.sfx.play("bubbles", 0.5 + 0.5 * random.random())
             return
         if day > 0.6 and rnd() < 0.13 and w.biome_name(p.x, p.z) in ("forest", "birch_forest", "plains", "taiga"):
             self.sfx.play(f"bird{int(rnd() * 4)}", 0.35 + 0.65 * rnd())
@@ -796,7 +805,7 @@ class PlayMixin:
             self.particles.puff(m.x, m.y + m.height * 0.6, m.z, (255, 255, 160), 6, 0.06)
         m.damage(dmg, self.player.x, self.player.z)
         self.sfx.play("attack")
-        self.sfx.play(m.kind, 0.8)
+        self.sfx.play(f"{m.kind}_hurt", 0.8)  # its cry of pain (its usual voice when it has none)
         self.exhaustion += 0.1
         self.swing = 1.0
 

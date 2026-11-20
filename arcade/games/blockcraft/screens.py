@@ -151,6 +151,9 @@ class ScreensMixin:
             button("book", cx + 2, y + 40, 98, "Recipe Book")
             button("controls", cx - 100, y + 64, 98, "Controls...")
             button("options", cx + 2, y + 64, 98, "Options...")
+            if getattr(self, "dim", "over") != "over":  # always a way home from the other realms
+                button("home", cx - 100, y + 88, 200, "Return to the Overworld")
+                y += 24
             button("quit_title", cx - 100, y + 96, 200, "Save and Quit to Title")
             button("exit", cx - 100, y + 120, 200, "Back to Arcade")
         elif scr == "dead":

@@ -1,0 +1,245 @@
+BlockCraft sound effects - credits
+==================================
+
+Every WAV file in this folder is a short clip cut from a free sound pack, then trimmed, faded, levelled
+and converted to mono 16-bit WAV for the game. None of it comes from another game.
+
+Licences
+  CC0 1.0    https://creativecommons.org/publicdomain/zero/1.0/
+  CC BY 3.0  https://creativecommons.org/licenses/by/3.0/
+             Credit required: the pig sounds (pig_*.wav) are from "Pig SFX Pack" by Vinrax,
+             https://opengameart.org/content/pig-sfx-pack - changed here (trimmed, faded, levelled, WAV).
+
+The music and the fallback sounds are synthesised by the game's own code (sounds.py).
+
+file | cut from | pack | author | licence | source page | bytes
+----------------------------------------------------------------------------------------------------
+step_grass_1.wav | footstep_grass_000.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 18566
+step_grass_2.wav | footstep_grass_001.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 18566
+step_grass_3.wav | footstep_grass_002.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 18566
+step_grass_4.wav | footstep_grass_003.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 18566
+step_grass_5.wav | footstep_grass_004.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 18566
+step_stone_1.wav | Fantozzi-StoneL1.flac | Fantozzi's Footsteps (Grass/Sand & Stone) | Fantozzi (submitted by qubodup) | CC0 1.0 | https://opengameart.org/content/fantozzis-footsteps-grasssand-stone | 15884
+step_stone_2.wav | Fantozzi-StoneL2.flac | Fantozzi's Footsteps (Grass/Sand & Stone) | Fantozzi (submitted by qubodup) | CC0 1.0 | https://opengameart.org/content/fantozzis-footsteps-grasssand-stone | 14670
+step_stone_3.wav | Fantozzi-StoneL3.flac | Fantozzi's Footsteps (Grass/Sand & Stone) | Fantozzi (submitted by qubodup) | CC0 1.0 | https://opengameart.org/content/fantozzis-footsteps-grasssand-stone | 14638
+step_stone_4.wav | Fantozzi-StoneR1.flac | Fantozzi's Footsteps (Grass/Sand & Stone) | Fantozzi (submitted by qubodup) | CC0 1.0 | https://opengameart.org/content/fantozzis-footsteps-grasssand-stone | 15708
+step_stone_5.wav | Fantozzi-StoneR2.flac | Fantozzi's Footsteps (Grass/Sand & Stone) | Fantozzi (submitted by qubodup) | CC0 1.0 | https://opengameart.org/content/fantozzis-footsteps-grasssand-stone | 14124
+step_wood_1.wav | footstep_wood_000.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 12012
+step_wood_2.wav | footstep_wood_001.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 11010
+step_wood_3.wav | footstep_wood_002.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 11002
+step_wood_4.wav | footstep_wood_003.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 11008
+step_wood_5.wav | footstep_wood_004.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 10850
+step_sand_1.wav | Fantozzi-SandL1.flac | Fantozzi's Footsteps (Grass/Sand & Stone) | Fantozzi (submitted by qubodup) | CC0 1.0 | https://opengameart.org/content/fantozzis-footsteps-grasssand-stone | 19052
+step_sand_2.wav | Fantozzi-SandL2.flac | Fantozzi's Footsteps (Grass/Sand & Stone) | Fantozzi (submitted by qubodup) | CC0 1.0 | https://opengameart.org/content/fantozzis-footsteps-grasssand-stone | 14124
+step_sand_3.wav | Fantozzi-SandR1.flac | Fantozzi's Footsteps (Grass/Sand & Stone) | Fantozzi (submitted by qubodup) | CC0 1.0 | https://opengameart.org/content/fantozzis-footsteps-grasssand-stone | 17938
+step_sand_4.wav | Fantozzi-SandR2.flac | Fantozzi's Footsteps (Grass/Sand & Stone) | Fantozzi (submitted by qubodup) | CC0 1.0 | https://opengameart.org/content/fantozzis-footsteps-grasssand-stone | 14828
+step_gravel_1.wav | footstep00.ogg | RPG Audio | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/rpg-audio | 10252
+step_gravel_2.wav | footstep01.ogg | RPG Audio | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/rpg-audio | 10604
+step_gravel_3.wav | footstep02.ogg | RPG Audio | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/rpg-audio | 9900
+step_gravel_4.wav | footstep03.ogg | RPG Audio | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/rpg-audio | 11380
+step_gravel_5.wav | footstep04.ogg | RPG Audio | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/rpg-audio | 11836
+step_snow_1.wav | footstep_snow_000.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 16420
+step_snow_2.wav | footstep_snow_001.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 16420
+step_snow_3.wav | footstep_snow_002.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 16420
+step_snow_4.wav | footstep_snow_003.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 16420
+step_snow_5.wav | footstep_snow_004.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 16420
+step_cloth_1.wav | footstep_carpet_000.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 7404
+step_cloth_2.wav | footstep_carpet_001.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 6302
+step_cloth_3.wav | footstep_carpet_002.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 6302
+step_cloth_4.wav | footstep_carpet_003.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 6302
+step_cloth_5.wav | footstep_carpet_004.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 6302
+step_glass_1.wav | impactGlass_light_000.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 10220
+step_glass_2.wav | impactGlass_light_001.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 9160
+step_glass_3.wav | impactGlass_light_002.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 9160
+step_glass_4.wav | impactGlass_light_003.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 9160
+step_metal_1.wav | impactMetal_medium_000.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 11902
+step_metal_2.wav | impactMetal_medium_001.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 6242
+step_metal_3.wav | impactMetal_medium_002.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 5170
+step_metal_4.wav | impactMetal_medium_004.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 4742
+place_stone_1.wav | impactGeneric_light_000.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 7148
+place_stone_2.wav | impactGeneric_light_002.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 7148
+place_stone_3.wav | impactGeneric_light_003.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 6002
+place_stone_4.wav | stone01.ogg | Different steps on wood, stone, leaves, gravel and mud | TinyWorlds | CC0 1.0 | https://opengameart.org/content/different-steps-on-wood-stone-leaves-gravel-and-mud | 12986
+place_wood_1.wav | wood01.ogg | Different steps on wood, stone, leaves, gravel and mud | TinyWorlds | CC0 1.0 | https://opengameart.org/content/different-steps-on-wood-stone-leaves-gravel-and-mud | 10702
+place_wood_2.wav | wood02.ogg | Different steps on wood, stone, leaves, gravel and mud | TinyWorlds | CC0 1.0 | https://opengameart.org/content/different-steps-on-wood-stone-leaves-gravel-and-mud | 10702
+place_wood_3.wav | wood03.ogg | Different steps on wood, stone, leaves, gravel and mud | TinyWorlds | CC0 1.0 | https://opengameart.org/content/different-steps-on-wood-stone-leaves-gravel-and-mud | 14064
+place_wood_4.wav | impactWood_light_000.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 11630
+place_grass_1.wav | impactSoft_medium_000.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 5120
+place_grass_2.wav | impactSoft_medium_001.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 8000
+place_grass_3.wav | impactSoft_medium_002.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 5878
+place_gravel_1.wav | footstep05.ogg | RPG Audio | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/rpg-audio | 12206
+place_gravel_2.wav | footstep06.ogg | RPG Audio | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/rpg-audio | 10722
+place_gravel_3.wav | footstep07.ogg | RPG Audio | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/rpg-audio | 8844
+place_gravel_4.wav | footstep09.ogg | RPG Audio | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/rpg-audio | 9536
+place_sand_1.wav | Fantozzi-SandL3.flac | Fantozzi's Footsteps (Grass/Sand & Stone) | Fantozzi (submitted by qubodup) | CC0 1.0 | https://opengameart.org/content/fantozzis-footsteps-grasssand-stone | 13254
+place_sand_2.wav | Fantozzi-SandR3.flac | Fantozzi's Footsteps (Grass/Sand & Stone) | Fantozzi (submitted by qubodup) | CC0 1.0 | https://opengameart.org/content/fantozzis-footsteps-grasssand-stone | 14574
+place_sand_3.wav | Fantozzi-SandL2.flac | Fantozzi's Footsteps (Grass/Sand & Stone) | Fantozzi (submitted by qubodup) | CC0 1.0 | https://opengameart.org/content/fantozzis-footsteps-grasssand-stone | 16042
+place_snow_1.wav | Corsica_S-Walking_on_snow_covered_gravel_18.flac | 42 Snow and Gravel Footsteps | Corsica_S (submitted by qubodup) | CC0 1.0 | https://opengameart.org/content/42-snow-and-gravel-footsteps | 19818
+place_snow_2.wav | Corsica_S-Walking_on_snow_covered_gravel_and_ice_01.flac | 42 Snow and Gravel Footsteps | Corsica_S (submitted by qubodup) | CC0 1.0 | https://opengameart.org/content/42-snow-and-gravel-footsteps | 19554
+place_snow_3.wav | Corsica_S-Walking_on_snow_covered_gravel_and_ice_24.flac | 42 Snow and Gravel Footsteps | Corsica_S (submitted by qubodup) | CC0 1.0 | https://opengameart.org/content/42-snow-and-gravel-footsteps | 19228
+place_glass_1.wav | impactGlass_light_004.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 9160
+place_glass_2.wav | impactGlass_medium_000.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 14156
+place_glass_3.wav | impactGlass_medium_001.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 14156
+place_cloth_1.wav | impactSoft_medium_003.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 6100
+place_cloth_2.wav | impactSoft_medium_004.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 6406
+place_cloth_3.wav | dropLeather.ogg | RPG Audio | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/rpg-audio | 13772
+place_metal_1.wav | impactTin_medium_000.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 6916
+place_metal_2.wav | impactTin_medium_001.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 7604
+place_metal_3.wav | impactTin_medium_003.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 9378
+dig_stone_1.wav | impactMining_000.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 26504
+dig_stone_2.wav | impactMining_001.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 26504
+dig_stone_3.wav | impactMining_002.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 26504
+dig_stone_4.wav | impactMining_004.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 26504
+dig_wood_1.wav | impactWood_heavy_000.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 13722
+dig_wood_2.wav | impactWood_heavy_001.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 13722
+dig_wood_3.wav | impactWood_heavy_002.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 13722
+dig_wood_4.wav | impactWood_heavy_003.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 13722
+dig_grass_1.wav | leaves01.ogg | Different steps on wood, stone, leaves, gravel and mud | TinyWorlds | CC0 1.0 | https://opengameart.org/content/different-steps-on-wood-stone-leaves-gravel-and-mud | 17300
+dig_grass_2.wav | leaves02.ogg | Different steps on wood, stone, leaves, gravel and mud | TinyWorlds | CC0 1.0 | https://opengameart.org/content/different-steps-on-wood-stone-leaves-gravel-and-mud | 20960
+dig_grass_3.wav | footstep_grass_003.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 34620
+dig_grass_4.wav | footstep_grass_004.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 30516
+dig_gravel_1.wav | gravel.ogg | Different steps on wood, stone, leaves, gravel and mud | TinyWorlds | CC0 1.0 | https://opengameart.org/content/different-steps-on-wood-stone-leaves-gravel-and-mud | 31086
+dig_gravel_2.wav | mud02.ogg | Different steps on wood, stone, leaves, gravel and mud | TinyWorlds | CC0 1.0 | https://opengameart.org/content/different-steps-on-wood-stone-leaves-gravel-and-mud | 13530
+dig_gravel_3.wav | stones_04.ogg | 80 CC0 RPG SFX | rubberduck | CC0 1.0 | https://opengameart.org/content/80-cc0-rpg-sfx | 9548
+dig_gravel_4.wav | footstep08.ogg | RPG Audio | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/rpg-audio | 15698
+dig_sand_1.wav | Fantozzi-SandL1.flac | Fantozzi's Footsteps (Grass/Sand & Stone) | Fantozzi (submitted by qubodup) | CC0 1.0 | https://opengameart.org/content/fantozzis-footsteps-grasssand-stone | 26442
+dig_sand_2.wav | Fantozzi-SandR1.flac | Fantozzi's Footsteps (Grass/Sand & Stone) | Fantozzi (submitted by qubodup) | CC0 1.0 | https://opengameart.org/content/fantozzis-footsteps-grasssand-stone | 24894
+dig_sand_3.wav | Fantozzi-SandR3.flac | Fantozzi's Footsteps (Grass/Sand & Stone) | Fantozzi (submitted by qubodup) | CC0 1.0 | https://opengameart.org/content/fantozzis-footsteps-grasssand-stone | 20222
+dig_snow_1.wav | Corsica_S-Walking_on_snow_covered_gravel_05.flac | 42 Snow and Gravel Footsteps | Corsica_S (submitted by qubodup) | CC0 1.0 | https://opengameart.org/content/42-snow-and-gravel-footsteps | 28310
+dig_snow_2.wav | Corsica_S-Walking_on_snow_covered_gravel_07.flac | 42 Snow and Gravel Footsteps | Corsica_S (submitted by qubodup) | CC0 1.0 | https://opengameart.org/content/42-snow-and-gravel-footsteps | 30476
+dig_snow_3.wav | Corsica_S-Walking_on_snow_covered_gravel_09.flac | 42 Snow and Gravel Footsteps | Corsica_S (submitted by qubodup) | CC0 1.0 | https://opengameart.org/content/42-snow-and-gravel-footsteps | 26942
+dig_snow_4.wav | Corsica_S-Walking_on_snow_covered_gravel_14.flac | 42 Snow and Gravel Footsteps | Corsica_S (submitted by qubodup) | CC0 1.0 | https://opengameart.org/content/42-snow-and-gravel-footsteps | 29582
+dig_glass_1.wav | impactGlass_heavy_000.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 10554
+dig_glass_2.wav | impactGlass_heavy_001.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 18964
+dig_glass_3.wav | impactGlass_heavy_002.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 10816
+dig_glass_4.wav | impactGlass_heavy_004.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 17520
+dig_cloth_1.wav | cloth1.ogg | RPG Audio | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/rpg-audio | 22094
+dig_cloth_2.wav | cloth2.ogg | RPG Audio | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/rpg-audio | 16060
+dig_cloth_3.wav | cloth3.ogg | RPG Audio | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/rpg-audio | 21060
+dig_cloth_4.wav | impactSoft_heavy_000.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 23276
+dig_metal_1.wav | impactMetal_heavy_000.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 7310
+dig_metal_2.wav | impactMetal_heavy_001.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 15760
+dig_metal_3.wav | impactMetal_heavy_003.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 9042
+dig_metal_4.wav | impactMetal_heavy_004.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 5818
+splash_1.wav | splash_02.ogg | 40 CC0 water / splash / slime SFX | rubberduck | CC0 1.0 | https://opengameart.org/content/40-cc0-water-splash-slime-sfx | 26268
+splash_2.wav | splash_04.ogg | 40 CC0 water / splash / slime SFX | rubberduck | CC0 1.0 | https://opengameart.org/content/40-cc0-water-splash-slime-sfx | 38060
+splash_3.wav | splash_08.ogg | 40 CC0 water / splash / slime SFX | rubberduck | CC0 1.0 | https://opengameart.org/content/40-cc0-water-splash-slime-sfx | 24684
+splash_4.wav | splash_13.ogg | 40 CC0 water / splash / slime SFX | rubberduck | CC0 1.0 | https://opengameart.org/content/40-cc0-water-splash-slime-sfx | 31020
+splash_out_1.wav | splash_03.ogg | 40 CC0 water / splash / slime SFX | rubberduck | CC0 1.0 | https://opengameart.org/content/40-cc0-water-splash-slime-sfx | 19888
+splash_out_2.wav | splash_12.ogg | 40 CC0 water / splash / slime SFX | rubberduck | CC0 1.0 | https://opengameart.org/content/40-cc0-water-splash-slime-sfx | 19888
+splash_out_3.wav | splash_09.ogg | 40 CC0 water / splash / slime SFX | rubberduck | CC0 1.0 | https://opengameart.org/content/40-cc0-water-splash-slime-sfx | 8844
+swim_1.wav | splash_10.ogg | 40 CC0 water / splash / slime SFX | rubberduck | CC0 1.0 | https://opengameart.org/content/40-cc0-water-splash-slime-sfx | 10252
+swim_2.wav | splash_14.ogg | 40 CC0 water / splash / slime SFX | rubberduck | CC0 1.0 | https://opengameart.org/content/40-cc0-water-splash-slime-sfx | 20460
+swim_3.wav | splash_15.ogg | 40 CC0 water / splash / slime SFX | rubberduck | CC0 1.0 | https://opengameart.org/content/40-cc0-water-splash-slime-sfx | 17468
+swim_4.wav | splash_06.ogg | 40 CC0 water / splash / slime SFX | rubberduck | CC0 1.0 | https://opengameart.org/content/40-cc0-water-splash-slime-sfx | 17116
+bubbles_1.wav | bubble_01.ogg | 40 CC0 water / splash / slime SFX | rubberduck | CC0 1.0 | https://opengameart.org/content/40-cc0-water-splash-slime-sfx | 30758
+bubbles_2.wav | bubble_02.ogg | 40 CC0 water / splash / slime SFX | rubberduck | CC0 1.0 | https://opengameart.org/content/40-cc0-water-splash-slime-sfx | 10956
+bubbles_3.wav | bubble_03.ogg | 40 CC0 water / splash / slime SFX | rubberduck | CC0 1.0 | https://opengameart.org/content/40-cc0-water-splash-slime-sfx | 23276
+shore_1.wav | wave_02_cc0-18363__jasinski__alkaibeach.flac | Beach Ocean Waves | jasinski (submitted by qubodup) | CC0 1.0 | https://opengameart.org/content/beach-ocean-waves | 80044
+shore_2.wav | wave_03_cc0-18363__jasinski__alkaibeach.flac | Beach Ocean Waves | jasinski (submitted by qubodup) | CC0 1.0 | https://opengameart.org/content/beach-ocean-waves | 72044
+shore_3.wav | wave_04_cc0-11505__transitking__wavesound.flac | Water Waves | transitking (submitted by qubodup) | CC0 1.0 | https://opengameart.org/content/water-waves | 64678
+cow_1.wav | 2383.flac | BigSoundBank | Joseph SARDIN (BigSoundBank.com) | CC0 1.0 | https://bigsoundbank.com/cow-moos-3-s2383.html | 83834
+cow_2.wav | 2384.flac | BigSoundBank | Joseph SARDIN (BigSoundBank.com) | CC0 1.0 | https://bigsoundbank.com/cow-moos-4-s2384.html | 83834
+cow_3.wav | 2385.flac | BigSoundBank | Joseph SARDIN (BigSoundBank.com) | CC0 1.0 | https://bigsoundbank.com/cow-moos-5-s2385.html | 83834
+cow_4.wav | 2386.flac | BigSoundBank | Joseph SARDIN (BigSoundBank.com) | CC0 1.0 | https://bigsoundbank.com/cow-moos-6-s2386.html | 83834
+sheep_1.wav | 2343.flac | BigSoundBank | Joseph SARDIN (BigSoundBank.com) | CC0 1.0 | https://bigsoundbank.com/sheep-1-s2343.html | 32076
+sheep_2.wav | 2344.flac | BigSoundBank | Joseph SARDIN (BigSoundBank.com) | CC0 1.0 | https://bigsoundbank.com/sheep-2-s2344.html | 32956
+sheep_3.wav | 2345.flac | BigSoundBank | Joseph SARDIN (BigSoundBank.com) | CC0 1.0 | https://bigsoundbank.com/sheep-3-s2345.html | 35244
+sheep_4.wav | 2346.flac | BigSoundBank | Joseph SARDIN (BigSoundBank.com) | CC0 1.0 | https://bigsoundbank.com/sheep-4-s2346.html | 31196
+sheep_5.wav | sheep_baa.flac | Sheep Baa | AntumDeluge (from a recording by mikewest) | CC0 1.0 | https://opengameart.org/content/sheep-baa | 37814
+pig_1.wav | pig_idle.mp3 | Pig SFX Pack | Vinrax | CC BY 3.0 | https://opengameart.org/content/pig-sfx-pack | 32956
+pig_2.wav | pig_idle2.mp3 | Pig SFX Pack | Vinrax | CC BY 3.0 | https://opengameart.org/content/pig-sfx-pack | 16412
+pig_3.wav | pig_idle3.mp3 | Pig SFX Pack | Vinrax | CC BY 3.0 | https://opengameart.org/content/pig-sfx-pack | 12892
+pig_4.wav | pig_idle4.mp3 | Pig SFX Pack | Vinrax | CC BY 3.0 | https://opengameart.org/content/pig-sfx-pack | 38940
+pig_hurt_1.wav | pig_hit1.mp3 | Pig SFX Pack | Vinrax | CC BY 3.0 | https://opengameart.org/content/pig-sfx-pack | 16412
+pig_hurt_2.wav | pig_hit2.mp3 | Pig SFX Pack | Vinrax | CC BY 3.0 | https://opengameart.org/content/pig-sfx-pack | 19228
+chicken_1.wav | 453.flac | BigSoundBank | Joseph SARDIN (BigSoundBank.com) | CC0 1.0 | https://bigsoundbank.com/annoyed-hen-s0453.html | 40268
+chicken_2.wav | 453.flac | BigSoundBank | Joseph SARDIN (BigSoundBank.com) | CC0 1.0 | https://bigsoundbank.com/annoyed-hen-s0453.html | 35068
+chicken_3.wav | 453.flac | BigSoundBank | Joseph SARDIN (BigSoundBank.com) | CC0 1.0 | https://bigsoundbank.com/annoyed-hen-s0453.html | 28908
+chicken_4.wav | 978.flac | BigSoundBank | Joseph SARDIN (BigSoundBank.com) | CC0 1.0 | https://bigsoundbank.com/hens-lays-s0978.html | 33034
+chicken_5.wav | 978.flac | BigSoundBank | Joseph SARDIN (BigSoundBank.com) | CC0 1.0 | https://bigsoundbank.com/hens-lays-s0978.html | 30564
+chicken_hurt_1.wav | 976.wav | BigSoundBank | Joseph SARDIN (BigSoundBank.com) | CC0 1.0 | https://bigsoundbank.com/hen-lays-2-s0976.html | 52260
+chicken_hurt_2.wav | 976.wav | BigSoundBank | Joseph SARDIN (BigSoundBank.com) | CC0 1.0 | https://bigsoundbank.com/hen-lays-2-s0976.html | 47676
+settler_1.wav | human_03.ogg | 80 CC0 creture SFX #2 | rubberduck | CC0 1.0 | https://opengameart.org/content/80-cc0-creture-sfx-2 | 25916
+settler_2.wav | human_05.ogg | 80 CC0 creture SFX #2 | rubberduck | CC0 1.0 | https://opengameart.org/content/80-cc0-creture-sfx-2 | 22572
+settler_3.wav | human_06.ogg | 80 CC0 creture SFX #2 | rubberduck | CC0 1.0 | https://opengameart.org/content/80-cc0-creture-sfx-2 | 25212
+settler_4.wav | human_07.ogg | 80 CC0 creture SFX #2 | rubberduck | CC0 1.0 | https://opengameart.org/content/80-cc0-creture-sfx-2 | 25740
+zombie_1.wav | darsycho__zombie-moans_0.ogg | Zombie moans | Darsycho | CC0 1.0 | https://opengameart.org/content/zombie-moans | 43516
+zombie_2.wav | darsycho__zombie-moans_0.ogg | Zombie moans | Darsycho | CC0 1.0 | https://opengameart.org/content/zombie-moans | 66194
+zombie_3.wav | darsycho__zombie-moans_0.ogg | Zombie moans | Darsycho | CC0 1.0 | https://opengameart.org/content/zombie-moans | 66194
+zombie_4.wav | monster_04.ogg | 80 CC0 creature SFX | rubberduck | CC0 1.0 | https://opengameart.org/content/80-cc0-creature-sfx | 45452
+zombie_hurt_1.wav | creature_hurt_01.ogg | 80 CC0 RPG SFX | rubberduck | CC0 1.0 | https://opengameart.org/content/80-cc0-rpg-sfx | 20460
+zombie_hurt_2.wav | grunt_02.ogg | 80 CC0 creature SFX | rubberduck | CC0 1.0 | https://opengameart.org/content/80-cc0-creature-sfx | 23108
+spider_1.wav | bug_05.ogg | 80 CC0 creture SFX #2 | rubberduck | CC0 1.0 | https://opengameart.org/content/80-cc0-creture-sfx-2 | 12188
+spider_2.wav | bug_08.ogg | 80 CC0 creture SFX #2 | rubberduck | CC0 1.0 | https://opengameart.org/content/80-cc0-creture-sfx-2 | 12540
+spider_3.wav | bug_10.ogg | 80 CC0 creture SFX #2 | rubberduck | CC0 1.0 | https://opengameart.org/content/80-cc0-creture-sfx-2 | 14300
+spider_4.wav | bug_13.ogg | 80 CC0 creture SFX #2 | rubberduck | CC0 1.0 | https://opengameart.org/content/80-cc0-creture-sfx-2 | 9724
+slime_1.wav | slime_02.ogg | 80 CC0 creture SFX #2 | rubberduck | CC0 1.0 | https://opengameart.org/content/80-cc0-creture-sfx-2 | 17996
+slime_2.wav | slime_07.ogg | 80 CC0 creture SFX #2 | rubberduck | CC0 1.0 | https://opengameart.org/content/80-cc0-creture-sfx-2 | 11132
+slime_3.wav | slime_15.ogg | 40 CC0 water / splash / slime SFX | rubberduck | CC0 1.0 | https://opengameart.org/content/40-cc0-water-splash-slime-sfx | 17468
+slime_4.wav | slime_16.ogg | 40 CC0 water / splash / slime SFX | rubberduck | CC0 1.0 | https://opengameart.org/content/40-cc0-water-splash-slime-sfx | 14124
+cinder_1.wav | spell_fire_05.ogg | 80 CC0 RPG SFX | rubberduck | CC0 1.0 | https://opengameart.org/content/80-cc0-rpg-sfx | 39734
+cinder_2.wav | spell_fire_06.ogg | 80 CC0 RPG SFX | rubberduck | CC0 1.0 | https://opengameart.org/content/80-cc0-rpg-sfx | 38764
+cinder_3.wav | spell_fire_07.ogg | 80 CC0 RPG SFX | rubberduck | CC0 1.0 | https://opengameart.org/content/80-cc0-rpg-sfx | 22924
+guardian_1.wav | grunt_07.ogg | 80 CC0 creture SFX #2 | rubberduck | CC0 1.0 | https://opengameart.org/content/80-cc0-creture-sfx-2 | 32780
+guardian_2.wav | grunt_08.ogg | 80 CC0 creture SFX #2 | rubberduck | CC0 1.0 | https://opengameart.org/content/80-cc0-creture-sfx-2 | 17644
+guardian_3.wav | grunt_09.ogg | 80 CC0 creture SFX #2 | rubberduck | CC0 1.0 | https://opengameart.org/content/80-cc0-creture-sfx-2 | 18700
+guardian_4.wav | troll_01.ogg | 80 CC0 creature SFX | rubberduck | CC0 1.0 | https://opengameart.org/content/80-cc0-creature-sfx | 25056
+wyrm_1.wav | roar_04.ogg | 80 CC0 creture SFX #2 | rubberduck | CC0 1.0 | https://opengameart.org/content/80-cc0-creture-sfx-2 | 35596
+wyrm_2.wav | roar_05.ogg | 80 CC0 creture SFX #2 | rubberduck | CC0 1.0 | https://opengameart.org/content/80-cc0-creture-sfx-2 | 42460
+wyrm_3.wav | creature_roar_03.ogg | 80 CC0 RPG SFX | rubberduck | CC0 1.0 | https://opengameart.org/content/80-cc0-rpg-sfx | 38412
+hurt_1.wav | impactPunch_medium_000.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 19032
+hurt_2.wav | impactPunch_medium_001.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 17760
+hurt_3.wav | impactPunch_medium_003.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 20122
+attack_1.wav | impactPunch_heavy_000.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 17684
+attack_2.wav | impactPunch_heavy_002.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 17684
+attack_3.wav | impactPunch_heavy_003.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 17684
+eat_1.wav | eat_02.ogg | 80 CC0 creature SFX | rubberduck | CC0 1.0 | https://opengameart.org/content/80-cc0-creature-sfx | 13068
+eat_2.wav | eat_03.ogg | 80 CC0 creature SFX | rubberduck | CC0 1.0 | https://opengameart.org/content/80-cc0-creature-sfx | 7260
+eat_3.wav | eat_04.ogg | 80 CC0 creature SFX | rubberduck | CC0 1.0 | https://opengameart.org/content/80-cc0-creature-sfx | 15004
+eat_4.wav | crunch.4.ogg | 7 Eating Crunches | StarNinjas | CC0 1.0 | https://opengameart.org/content/7-eating-crunches | 14156
+eat_5.wav | crunch.3.ogg | 7 Eating Crunches | StarNinjas | CC0 1.0 | https://opengameart.org/content/7-eating-crunches | 14156
+burp_1.wav | burp_01.ogg | 80 CC0 creature SFX | rubberduck | CC0 1.0 | https://opengameart.org/content/80-cc0-creature-sfx | 22572
+burp_2.wav | burp_02.ogg | 80 CC0 creature SFX | rubberduck | CC0 1.0 | https://opengameart.org/content/80-cc0-creature-sfx | 30492
+pop_1.wav | pop1.ogg | 3 Pop Sounds | wubitog | CC0 1.0 | https://opengameart.org/content/3-pop-sounds | 9900
+pop_2.wav | pop2.ogg | 3 Pop Sounds | wubitog | CC0 1.0 | https://opengameart.org/content/3-pop-sounds | 8300
+pop_3.wav | pop3.ogg | 3 Pop Sounds | wubitog | CC0 1.0 | https://opengameart.org/content/3-pop-sounds | 10076
+orb_1.wav | glass_002.ogg | Interface Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/interface-sounds | 5442
+orb_2.wav | glass_003.ogg | Interface Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/interface-sounds | 5370
+orb_3.wav | glass_005.ogg | Interface Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/interface-sounds | 5868
+orb_4.wav | glass_006.ogg | Interface Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/interface-sounds | 5868
+levelup_1.wav | Chime_LevelUp.mp3 | Chimey UI Sounds | MouseBYTE | CC0 1.0 | https://opengameart.org/content/chimey-ui-sounds | 71326
+click_1.wav | click_001.ogg | Interface Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/interface-sounds | 4328
+click_2.wav | select_001.ogg | Interface Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/interface-sounds | 1826
+click_3.wav | select_002.ogg | Interface Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/interface-sounds | 1826
+door_1.wav | metalLatch.ogg | RPG Audio | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/rpg-audio | 8668
+door_2.wav | doorClose_2.ogg | RPG Audio | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/rpg-audio | 22094
+door_3.wav | doorClose_4.ogg | RPG Audio | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/rpg-audio | 22094
+break_tool_1.wav | metal_02.ogg | 80 CC0 RPG SFX | rubberduck | CC0 1.0 | https://opengameart.org/content/80-cc0-rpg-sfx | 23276
+break_tool_2.wav | metal_03.ogg | 80 CC0 RPG SFX | rubberduck | CC0 1.0 | https://opengameart.org/content/80-cc0-rpg-sfx | 14652
+break_tool_3.wav | impactPlate_heavy_001.ogg | Impact Sounds | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/impact-sounds | 15454
+explode_1.wav | bang_03.ogg | 25 CC0 bang / firework SFX | rubberduck | CC0 1.0 | https://opengameart.org/content/25-cc0-bang-firework-sfx | 39468
+explode_2.wav | cannon_02.ogg | 25 CC0 bang / firework SFX | rubberduck | CC0 1.0 | https://opengameart.org/content/25-cc0-bang-firework-sfx | 52964
+explode_3.wav | bang_09.ogg | 25 CC0 bang / firework SFX | rubberduck | CC0 1.0 | https://opengameart.org/content/25-cc0-bang-firework-sfx | 44144
+fuse_1.wav | fuse_0.ogg | Simple Fuse Sound | themightyglider | CC0 1.0 | https://opengameart.org/content/simple-fuse-sound | 141164
+fire_1.wav | fire-1.wav | Fire Crackling | AntumDeluge | CC0 1.0 | https://opengameart.org/content/fire-crackling | 18566
+fire_2.wav | fire-1.wav | Fire Crackling | AntumDeluge | CC0 1.0 | https://opengameart.org/content/fire-crackling | 18566
+fire_3.wav | fire-1.wav | Fire Crackling | AntumDeluge | CC0 1.0 | https://opengameart.org/content/fire-crackling | 18566
+fire_4.wav | fire-1.wav | Fire Crackling | AntumDeluge | CC0 1.0 | https://opengameart.org/content/fire-crackling | 18566
+bird_1.wav | birds-isaiah658_0.ogg | Ambient Bird Sounds | isaiah658 | CC0 1.0 | https://opengameart.org/content/ambient-bird-sounds | 88242
+bird_2.wav | birds-isaiah658_0.ogg | Ambient Bird Sounds | isaiah658 | CC0 1.0 | https://opengameart.org/content/ambient-bird-sounds | 88244
+bird_3.wav | birds-isaiah658_0.ogg | Ambient Bird Sounds | isaiah658 | CC0 1.0 | https://opengameart.org/content/ambient-bird-sounds | 55170
+bird_4.wav | birds-isaiah658_0.ogg | Ambient Bird Sounds | isaiah658 | CC0 1.0 | https://opengameart.org/content/ambient-bird-sounds | 88244
+bird_5.wav | birdchirping071414.wav | Bird chirping sounds | syncopika | CC0 1.0 | https://opengameart.org/content/bird-chirping-sounds | 66184
+crickets_1.wav | crickets_1.mp3 | Crickets Ambient Noise - loopable | Wolfgang_ | CC0 1.0 | https://opengameart.org/content/crickets-ambient-noise-loopable | 114704
+crickets_2.wav | crickets_1.mp3 | Crickets Ambient Noise - loopable | Wolfgang_ | CC0 1.0 | https://opengameart.org/content/crickets-ambient-noise-loopable | 114704
+wind_1.wav | Wind.ogg | Wind | IgnasD | CC0 1.0 | https://opengameart.org/content/wind | 77218
+wind_2.wav | Wind2.ogg | Wind | IgnasD | CC0 1.0 | https://opengameart.org/content/wind | 77218
+cave_1.wav | dungeon_ambient_1_0.ogg | Loopable Dungeon Ambience | JaggedStone | CC0 1.0 | https://opengameart.org/content/loopable-dungeon-ambience | 99268
+cave_2.wav | dungeon_ambient_1_0.ogg | Loopable Dungeon Ambience | JaggedStone | CC0 1.0 | https://opengameart.org/content/loopable-dungeon-ambience | 99268
+drip_1.wav | atmosbasement.mp3_.flac | Dripping water loop | Independent.nu (submitted by qubodup) | CC0 1.0 | https://opengameart.org/content/dripping-water-loop | 27386
+drip_2.wav | atmosbasement.mp3_.flac | Dripping water loop | Independent.nu (submitted by qubodup) | CC0 1.0 | https://opengameart.org/content/dripping-water-loop | 39294
+drip_3.wav | atmosbasement.mp3_.flac | Dripping water loop | Independent.nu (submitted by qubodup) | CC0 1.0 | https://opengameart.org/content/dripping-water-loop | 36206
+drip_4.wav | atmosbasement.mp3_.flac | Dripping water loop | Independent.nu (submitted by qubodup) | CC0 1.0 | https://opengameart.org/content/dripping-water-loop | 41058
+
+227 files, 5692532 bytes

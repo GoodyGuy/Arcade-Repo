@@ -59,6 +59,7 @@ class BlockCraftGame(ScreensMixin, BookMixin, LifeMixin, PlayMixin, ArcadeGame):
 
     def __init__(self, parent=None) -> None:  # noqa: ANN001
         super().__init__(parent)
+        self.sfx = sounds.Bank()  # recorded takes of each sound, the synthesised ones where a file is missing
         self.opts = dict(DEFAULT_OPTS)
         self.worlds: list[dict] = []
         self.screen = "splash"
@@ -512,6 +513,10 @@ class BlockCraftGame(ScreensMixin, BookMixin, LifeMixin, PlayMixin, ArcadeGame):
                         world.remesh_all(bool(self.opts["smooth"]))
         elif wid in ("adv", "book"):
             self.open_book("advancements" if wid == "adv" else "recipes")
+        elif wid == "home":
+            if self.dim != "over" and not self.travelling:
+                self.overlay = None
+                self.travel("over")
         elif wid == "controls":
             self.controls_requested.emit()
         elif wid == "res":

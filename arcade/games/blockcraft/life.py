@@ -339,6 +339,8 @@ class LifeMixin:
         self.capture_if_playing()
         self.progress_changed.emit()
         self.say(f"You enter {REALM_NAMES[self.dim]}", 4.5)
+        if self.dim != "over":
+            self.say("Way home: the gate under your feet, or Esc > Return to the Overworld", 9.0)
         self.award("deep" if self.dim == "deep" else ("isles" if self.dim == "isles" else ""))
 
     def _landing(self, x: int, z: int) -> tuple[int, int, int]:

@@ -277,6 +277,10 @@ def block_box(f, a: float, light: np.ndarray, origin: tuple) -> np.ndarray:  # n
 
 # --- shaders ---------------------------------------------------------------------------------------------------------
 
+SHADOW_SIZE = 2048  # Shaders: the sun's depth picture, and how far around the camera it reaches (blocks)
+SHADOW_RANGE = 80.0
+
+
 def _glsl_array(kind: str, name: str, rows: list) -> str:
     body = ", ".join(f"{kind}({', '.join(f'{float(v):.6f}' for v in r)})" for r in rows)
     return f"const {kind} {name}[{len(rows)}] = {kind}[{len(rows)}]({body});\n"
@@ -310,15 +314,49 @@ float curve(float f) {
 }
 """
 
-_CHUNK_VS = "#version 330 core\n" + _LIGHT_GLSL + (
+_SHAPE_GLSL = (
     _glsl_array("vec3", "O", [s[0] for s in SHAPES]) + _glsl_array("vec3", "U", [s[1] for s in SHAPES]) +
     _glsl_array("vec3", "V", [s[2] for s in SHAPES]) + _glsl_array("vec4", "UV", [s[3] for s in SHAPES]) +
-    f"const float SHADE[{len(SHAPES)}] = float[{len(SHAPES)}]({', '.join(str(float(s[4])) for s in SHAPES)});\n") + """
+    f"const float SHADE[{len(SHAPES)}] = float[{len(SHAPES)}]({', '.join(str(float(s[4])) for s in SHAPES)});\n")
+
+# Shaders: the world as the sun sees it, its depth kept in a texture (what the sun cannot see is in shadow)
+_SHADOW_VS = "#version 330 core\n" + _SHAPE_GLSL + """
+layout(location = 0) in vec4 a_pos; layout(location = 1) in vec4 a_dat;
+uniform mat4 u_vp; uniform vec3 u_off; uniform float u_time;
+out vec2 v_uv; flat out float v_layer;
+const int FLIP[4] = int[4](1, 3, 0, 2);
+void main() {
+    vec4 P = floor(a_pos * 255.0 + 0.5);
+    vec4 D = floor(a_dat * 255.0 + 0.5);
+    int t = int(P.w), flags = int(D.y), id = gl_VertexID;
+    if ((flags & 1) != 0) id = FLIP[id];
+    float u = float(id & 1), v = float(id >> 1);
+    vec3 p = P.xyz + O[t] + U[t] * u + V[t] * v + u_off;
+    if ((flags & 4) != 0 && v > 0.5) {
+        float ph = u_time * 1.7 + p.x * 0.7 + p.z * 0.9;
+        p.x += sin(ph) * 0.05; p.z += cos(ph * 0.83) * 0.05;
+    }
+    gl_Position = u_vp * vec4(p, 1.0);
+    vec4 r = UV[t];
+    v_uv = vec2(r.x + u * r.z, 1.0 - (r.y + v * r.w));
+    v_layer = D.x;
+}
+"""
+
+_SHADOW_FS = """#version 330 core
+in vec2 v_uv; flat in float v_layer; uniform sampler2DArray u_tex; out vec4 o;
+void main() {
+    if (texture(u_tex, vec3(v_uv, v_layer)).a < 0.35) discard;
+    o = vec4(gl_FragCoord.z, 0.0, 0.0, 1.0);
+}
+"""
+
+_CHUNK_VS = "#version 330 core\n" + _LIGHT_GLSL + _SHAPE_GLSL + """
 layout(location = 0) in vec4 a_pos; layout(location = 1) in vec4 a_dat;
 layout(location = 2) in vec4 a_sky; layout(location = 3) in vec4 a_blk;
 uniform mat4 u_vp; uniform vec3 u_off; uniform float u_time; uniform vec3 u_cam;
-uniform float u_fx; uniform vec3 u_light; uniform float u_lightpow; uniform float u_amb;
-out vec2 v_uv; flat out float v_layer; out vec3 v_light; out vec3 v_rel;
+uniform float u_fx; uniform vec3 u_light; uniform float u_lightpow; uniform float u_amb; uniform mat4 u_shvp;
+out vec2 v_uv; flat out float v_layer; out vec3 v_light; out vec3 v_rel; out vec3 v_sun; out vec3 v_sh;
 const int FLIP[4] = int[4](1, 3, 0, 2);
 const float AO[4] = float[4](0.42, 0.6, 0.8, 1.0);
 void main() {
@@ -337,6 +375,8 @@ void main() {
     vec4 r = UV[t];
     v_uv = vec2(r.x + u * r.z, 1.0 - (r.y + v * r.w));
     v_layer = D.x + (((flags & 2) != 0) ? 2.0 * mod(floor(u_time * 5.0), 8.0) : 0.0);
+    v_sun = vec3(0.0);
+    v_sh = vec3(0.5, 0.5, 0.0);
     if ((flags & 8) != 0) {
         v_light = vec3(1.0);
     } else {
@@ -344,11 +384,14 @@ void main() {
         float ao = AO[(int(D.z) >> (2 * id)) & 3];
         float shade = SHADE[t];
         vec3 skyc = u_skytint;
-        if (u_fx > 0.5) {  // shaders: the sun (or moon) lights what faces it, the sky fills the rest in blue
-            vec3 n = normalize(cross(U[t], V[t]));
-            float lit = max(dot(n, u_light), 0.0) * smoothstep(0.5, 0.95, a_sky[id]) * u_lightpow;
-            shade = (t >= 6 && t <= 14) ? 0.86 : 0.66 + 0.12 * n.y;
-            skyc = u_skytint * (vec3(0.78, 0.87, 1.0) + vec3(0.70, 0.56, 0.34) * lit);
+        if (u_fx > 0.5) {  // shaders: the sun (or moon) lights what faces it and is not in shadow (the fragment
+            vec3 n = normalize(cross(U[t], V[t]));  // shader asks the shadow map); the sky fills the rest in blue
+            bool plant = t >= 6 && t <= 14;
+            float lit = (plant ? 0.72 : max(dot(n, u_light), 0.0)) * smoothstep(0.45, 0.9, a_sky[id]) * u_lightpow;
+            shade = plant ? 0.84 : 0.64 + 0.12 * n.y;
+            skyc = u_skytint * vec3(0.70, 0.80, 1.0);
+            v_sun = u_skytint * vec3(0.74, 0.60, 0.40) * lit * s * (0.55 + 0.45 * ao);
+            v_sh = (u_shvp * vec4(p + (plant ? vec3(0.0, 0.05, 0.0) : n * 0.07), 1.0)).xyz * 0.5 + 0.5;
         }
         v_light = max(max(skyc * s, vec3(1.0, 0.88, 0.66) * b), vec3(u_amb)) * shade * ao;
     }
@@ -356,27 +399,56 @@ void main() {
 """
 
 _CHUNK_FS = "#version 330 core\n" + _SKY_GLSL + """
-in vec2 v_uv; flat in float v_layer; in vec3 v_light; in vec3 v_rel;
+in vec2 v_uv; flat in float v_layer; in vec3 v_light; in vec3 v_rel; in vec3 v_sun; in vec3 v_sh;
 uniform sampler2DArray u_tex; uniform float u_alpha;
 uniform float u_fx; uniform vec3 u_light; uniform float u_lightpow; uniform float u_time;
+uniform sampler2D u_shadow; uniform float u_shon; uniform float u_shpx;
 out vec4 o;
+float sunlit() {  // 1 in the sun, 0 in shadow: nine looks at the sun's depth picture around this spot
+    if (u_shon < 0.5) return 1.0;
+    vec3 q = v_sh;
+    if (q.z > 1.0) return 1.0;
+    vec2 e = abs(q.xy - 0.5) * 2.0;
+    float edge = max(e.x, e.y);
+    if (edge >= 1.0) return 1.0;
+    float s = 0.0;
+    for (int i = -1; i <= 1; i++)
+        for (int j = -1; j <= 1; j++)
+            s += q.z - 0.00035 > texture(u_shadow, q.xy + vec2(float(i), float(j)) * u_shpx).r ? 0.0 : 1.0;
+    return mix(s / 9.0, 1.0, smoothstep(0.82, 1.0, edge));
+}
 void main() {
     vec4 c = texture(u_tex, vec3(v_uv, v_layer));
     if (c.a < 0.35) discard;
-    vec3 rgb = c.rgb * v_light;
+    float sh = dot(v_sun, vec3(1.0)) > 0.001 ? sunlit() : 1.0;
+    vec3 lightc = v_light + v_sun * sh;
+    vec3 rgb = c.rgb * lightc;
     float alpha = u_alpha < 0.0 ? c.a : u_alpha;
-    if (u_fx > 0.5 && u_alpha > 0.0 && u_alpha < 0.99) {  // shaders: water ripples, mirrors the sky, glints
-        vec3 e = normalize(v_rel);
-        vec2 w = (v_rel.xz + u_cam.xz) * 0.3927;
-        vec3 n = normalize(vec3(sin(w.x * 3.0 + u_time * 1.3) * 0.05 + sin(w.y * 5.0 - u_time * 1.7) * 0.03, 1.0,
-                                sin(w.y * 3.0 + u_time * 1.1) * 0.05 + sin(w.x * 4.0 + u_time * 1.5) * 0.03));
+    if (u_fx > 0.5 && u_alpha > 0.0 && u_alpha < 0.99) {  // shaders: water with waves, depth of colour, the sky
+        vec3 e = normalize(v_rel);                         // mirrored in it and the sun glittering on it
+        vec2 w = (v_rel.xz + u_cam.xz) * 0.3927;  // whole waves per 16 blocks: the pattern has no seam
+        vec2 g = vec2(0.0);
+        g += vec2(3.0, 1.0) * cos(w.x * 3.0 + w.y * 1.0 + u_time * 1.10) * 0.016;
+        g += vec2(-2.0, 4.0) * cos(-w.x * 2.0 + w.y * 4.0 + u_time * 1.45) * 0.011;
+        g += vec2(5.0, -3.0) * cos(w.x * 5.0 - w.y * 3.0 - u_time * 1.90) * 0.006;
+        g += vec2(-7.0, -6.0) * cos(-w.x * 7.0 - w.y * 6.0 + u_time * 2.60) * 0.0034;
+        g += vec2(11.0, 4.0) * cos(w.x * 11.0 + w.y * 4.0 - u_time * 3.30) * 0.0018;
+        float far = clamp(length(v_rel) / 90.0, 0.0, 1.0);
+        vec3 n = normalize(vec3(-g.x * (1.0 - 0.6 * far), 1.0, -g.y * (1.0 - 0.6 * far)));
         if (e.y > 0.0) n = -n;
-        float fres = pow(1.0 - clamp(dot(-e, n), 0.0, 1.0), 3.0);
+        float facing = clamp(dot(-e, n), 0.0, 1.0);
+        vec3 lit = clamp(lightc, 0.0, 1.25);
+        vec3 body = mix(vec3(0.015, 0.105, 0.21), vec3(0.06, 0.34, 0.42), facing * 0.75) * (0.25 + 0.75 * lit);
+        body = mix(body, c.rgb * lit, 0.18);
+        float fres = 0.03 + 0.97 * pow(1.0 - facing, 5.0);
         vec3 back = reflect(e, n);
-        vec3 sky = skyColor(vec3(back.x, abs(back.y), back.z));
-        float glint = pow(max(dot(vec3(back.x, abs(back.y), back.z), u_light), 0.0), 600.0) * u_lightpow;
-        rgb = mix(rgb, sky, fres * 0.78) + vec3(1.0, 0.94, 0.8) * glint * 0.9;
-        alpha = mix(0.58, 0.96, fres);
+        vec3 up = vec3(back.x, abs(back.y), back.z);
+        vec3 sky = skyColor(up) * (0.35 + 0.65 * clamp(dot(v_light, vec3(0.45)), 0.0, 1.0));
+        float sd = max(dot(up, u_light), 0.0);
+        float glint = (pow(sd, 900.0) * 3.0 + pow(sd, 90.0) * 0.22) * u_lightpow * sh * u_shon;
+        glint += pow(sd, 600.0) * 0.9 * u_lightpow * (1.0 - u_shon);
+        rgb = mix(body, sky, fres * 0.9) + vec3(1.0, 0.93, 0.78) * glint;
+        alpha = mix(0.74, 0.98, fres);
     }
     o = vec4(fogged(rgb, v_rel), alpha);
 }
@@ -558,6 +630,7 @@ class Renderer:
         self.fbo: QOpenGLFramebufferObject | None = None
         self.resolve: QOpenGLFramebufferObject | None = None
         self.final: QOpenGLFramebufferObject | None = None  # the finished picture when Shaders are on
+        self.shadow: QOpenGLFramebufferObject | None = None  # Shaders: the depth of the world seen from the sun
         self.samples = 4
         self.meshes: dict[tuple[int, int], list] = {}  # chunk -> [solid mesh, water mesh, top]
         self._keys: list = []
@@ -592,7 +665,8 @@ class Renderer:
         self.p_dot = self._program(_DOT_VS, _DOT_FS)
         self.p_sky = self._program(_SKY_VS, _SKY_FS)
         self.p_post = self._program(_SKY_VS, _POST_FS)
-        self.loc = {id(p): {} for p in (self.p_chunk, self.p_box, self.p_dot, self.p_sky, self.p_post)}
+        self.p_shadow = self._program(_SHADOW_VS, _SHADOW_FS)
+        self.loc = {id(p): {} for p in (self.p_chunk, self.p_box, self.p_dot, self.p_sky, self.p_post, self.p_shadow)}
         # the textures
         L = layers()
         tex = QOpenGLTexture(QOpenGLTexture.Target.Target2DArray)
@@ -671,7 +745,7 @@ class Renderer:
                     m.destroy()
                 self.sky_vao.destroy()
                 self.tex.destroy()
-                self.fbo = self.resolve = self.final = None
+                self.fbo = self.resolve = self.final = self.shadow = None
                 self.ctx.doneCurrent()
         except Exception:  # noqa: BLE001 - closing must never fail
             log.debug("BlockCraft renderer close", exc_info=True)
@@ -829,6 +903,13 @@ class Renderer:
             f.glUniform4f(self._u(prog, "u_flat"), *flat)
             f.glUniform2f(self._u(prog, "u_fog"), *fog)
 
+        sun_up = float(env.sun[1]) > 0.0  # the light that falls: the sun by day, the moon by night
+        light = env.sun if sun_up else -env.sun
+        light = light + np.array([0.0, 0.25, 0.3], F32)
+        light = light / float(np.linalg.norm(light))
+        shvp = None
+        if shaders and not (env.flat_sky or env.underwater or env.in_lava):
+            shvp = self._shadow_pass(light, eye, ox, oz, float(env.time))
         self.fbo.bind()
         f.glViewport(0, 0, w, h)
         f.glDisable(GL_BLEND)
@@ -866,11 +947,15 @@ class Renderer:
         f.glUniform1f(self._u(prog, "u_gamma"), _GAMMA[0])
         f.glUniform3f(self._u(prog, "u_skytint"), *tint)
         f.glUniform1f(self._u(prog, "u_alpha"), 1.0)
-        sun_up = float(env.sun[1]) > 0.0  # the light that falls: the sun by day, the moon by night
-        light = env.sun if sun_up else -env.sun
-        light = light + np.array([0.0, 0.25, 0.3], F32)
-        light = light / float(np.linalg.norm(light))
         power = (min(1.0, float(env.sun[1]) * 3.0 + 0.25) if sun_up else 0.25)
+        f.glUniform1f(self._u(prog, "u_shon"), 1.0 if shvp is not None else 0.0)
+        f.glUniform1f(self._u(prog, "u_shpx"), 1.0 / SHADOW_SIZE)
+        prog.setUniformValue1i(self._u(prog, "u_shadow"), 1)
+        if shvp is not None:
+            prog.setUniformValue(self._u(prog, "u_shvp"), QMatrix4x4(*[float(v) for v in shvp.reshape(-1)]))
+            f.glActiveTexture(0x84C1)
+            f.glBindTexture(0x0DE1, self.shadow.texture())
+            f.glActiveTexture(0x84C0)
         f.glUniform1f(self._u(prog, "u_amb"), float(env.ambient))
         f.glUniform1f(self._u(prog, "u_fx"), 1.0 if shaders else 0.0)
         f.glUniform3f(self._u(prog, "u_light"), float(light[0]), float(light[1]), float(light[2]))
@@ -939,6 +1024,60 @@ class Renderer:
         self.stats = {"chunks": len(meshes), "drawn": len(visible), "faces": faces,
                       "ms": (time.perf_counter() - t0) * 1000}
         return img
+
+    def _shadow_pass(self, light: np.ndarray, eye: tuple, ox: float, oz: float, t: float) -> np.ndarray:
+        """Shaders: draw the chunks around the camera as the sun (or moon) sees them, keeping only how far each
+        point is from it. Returns the matrix that takes a position to that picture."""
+        f = self.f
+        if self.shadow is None:
+            fmt = QOpenGLFramebufferObjectFormat()
+            fmt.setAttachment(QOpenGLFramebufferObject.Attachment.Depth)
+            fmt.setInternalTextureFormat(0x822E)  # GL_R32F
+            self.shadow = QOpenGLFramebufferObject(SHADOW_SIZE, SHADOW_SIZE, fmt)
+        L = light.astype(np.float64)
+        right = np.cross(np.array([0.0, 1.0, 0.0]), L)
+        right = right / np.linalg.norm(right) if np.linalg.norm(right) > 1e-4 else np.array([1.0, 0.0, 0.0])
+        up = np.cross(L, right)
+        R, D = SHADOW_RANGE, 260.0
+        texel = 2.0 * R / SHADOW_SIZE  # the picture moves in whole texels, so shadows do not crawl as you walk
+        e = np.array([eye[0], eye[1], eye[2]], np.float64)
+        cx, cy = math.floor(float(right @ e) / texel) * texel, math.floor(float(up @ e) / texel) * texel
+        c = right * cx + up * cy + L * float(L @ e) - np.array([ox, 0.0, oz])
+        m = np.eye(4)
+        m[0, :3], m[0, 3] = right / R, -float(right @ c) / R
+        m[1, :3], m[1, 3] = up / R, -float(up @ c) / R
+        m[2, :3], m[2, 3] = -L / D, float(L @ c) / D
+        m = m.astype(F32)
+        self.shadow.bind()
+        f.glViewport(0, 0, SHADOW_SIZE, SHADOW_SIZE)
+        f.glDisable(GL_BLEND)
+        f.glEnable(GL_DEPTH_TEST)
+        f.glDepthFunc(GL_LESS)
+        f.glDepthMask(True)
+        f.glDisable(GL_CULL_FACE)
+        f.glClearColor(1.0, 1.0, 1.0, 1.0)
+        f.glClear(GL_DEPTH_BUFFER_BIT | 0x4000)
+        prog = self.p_shadow
+        prog.bind()
+        prog.setUniformValue(self._u(prog, "u_vp"), QMatrix4x4(*[float(v) for v in m.reshape(-1)]))
+        self.tex.bind(0)
+        prog.setUniformValue1i(self._u(prog, "u_tex"), 0)
+        f.glUniform1f(self._u(prog, "u_time"), t)
+        off = self._u(prog, "u_off")
+        reach = (R + 56.0) ** 2
+        px, pz = eye[0] - 8.0, eye[2] - 8.0
+        for key, entry in self.meshes.items():
+            mesh = entry[0]
+            if mesh is None or not mesh.count:
+                continue
+            x, z = key[0] * 16.0, key[1] * 16.0
+            if (x - px) ** 2 + (z - pz) ** 2 > reach:
+                continue
+            f.glUniform3f(off, x - ox, 0.0, z - oz)
+            mesh.vao.bind()
+            f.glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, mesh.count)
+        self.shadow.release()
+        return m
 
     def _finish(self, source: QOpenGLFramebufferObject, M: np.ndarray, fov: float, w: int, h: int, env: Env,
                 ) -> QOpenGLFramebufferObject:

@@ -36,7 +36,8 @@ A game that fails to import is left off the home screen; the rest still open.
 | `games/breach_point` | Breach Point | round-based plant-and-defuse tactical shooter, against bots |
 | `games/ashworth_hall` | Ashworth Hall | lawn restoration on a ride-on mower: one self-contained web page, played in Qt's built-in web view (or the browser where PySide6 has none) |
 
-All games are single player. Sound and music are synthesised in code; no audio files are shipped.
+All games are single player. Sound and music are synthesised in code, except BlockCraft's sound effects, which
+are short recorded clips (see the credits); without that folder BlockCraft uses its synthesised sounds.
 
 ## Credits and licences
 
@@ -44,6 +45,12 @@ All games are single player. Sound and music are synthesised in code; no audio f
   `arcade/games/blockcraft/Pixel Perfection 26.3-97.2/pack.txt`. Published by its authors under
   CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/). Only the block, item and colormap textures
   that the game reads are included here, unchanged. Without the folder BlockCraft draws its own textures.
+- **BlockCraft sound effects:** clips cut from free sound packs by Kenney, rubberduck, Joseph Sardin
+  (BigSoundBank), Fantozzi, Corsica_S, TinyWorlds, Darsycho, AntumDeluge, isaiah658, syncopika, Wolfgang_,
+  JaggedStone, IgnasD, jasinski, transitking, Independent.nu, themightyglider, MouseBYTE, StarNinjas and
+  wubitog, all CC0 1.0, and pig sounds from "Pig SFX Pack" by Vinrax, CC BY 3.0
+  (https://creativecommons.org/licenses/by/3.0/), changed (trimmed, faded, levelled). The per-file list with
+  source pages is in `arcade/games/blockcraft/sfx/CREDITS.txt`.
 - **Hellfire art:** unmodified pictures from the Freedoom project (https://freedoom.github.io/), under the BSD
   licence in `arcade/games/hellfire/freedoom/COPYING.adoc`; contributors in `CREDITS` beside it. Without the
   folder Hellfire draws its own art.
